@@ -5,7 +5,7 @@
 
 ## Architecture Version
 - **v1 baseline.** ARCHITECTURE.md carries no version tag; this is the first checkpoint (2026-10-02).
-- Implementation progress: **3 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **4 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
@@ -22,9 +22,10 @@ Exit gate: CI green; the harness catches a deliberate violation and reports zero
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
 - **M1-C02:** Provider interface, internal source target, fake provider, and reusable provider contract. 12 additional unit/contract tests pass; internal target excluded from API models and schemas.
 - **M1-C03:** Request correlation middleware, stdout-only structured JSON logging with secret redaction, and predeclared in-process metrics registry. 12 focused observability tests pass.
+- **M1-C05:** Live filesystem/browser-storage compliance monitors and self-check. Detects media, database, settings writes including child-process writes; detects browser storage API access and service-worker registration. Seven self-check tests pass.
 
 ## Upcoming Chunks
-**M1 (next):** C04 frontend typed API client · C05 no-persistence compliance harness (high risk, build early) · C06 CI/lockfiles/storage-API lint. C04–C05 can run in parallel.
+**M1 (next):** Complete C04 frontend validation when Node/npm are available; then C06 CI/lockfiles/storage-API lint (depends on C04 and C05).
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay (highest risk) · C05 concurrency limits · C06 POC page + gate
@@ -58,8 +59,8 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M1-C01:** 14 unit and integration tests passing, including startup configuration validation, canonical model contracts, full error-category mapping, health routes, OpenAPI schemas, and no-write startup check.
 - **M1-C03:** 12 tests pass for canary redaction, correlation in logs/error responses, stdout-only logging, and metric registry operations. Full backend suite: 38 tests passing.
 - **M1-C04:** OpenAPI-to-TypeScript drift check and deliberate-model-mutation test pass (2 tests). Vitest, Svelte type-check, and production build are not run because Node.js/npm are unavailable in the current environment.
+- **M1-C05:** Seven compliance tests pass: media/database/settings writes, child-process writes, committed-fixture exclusion, app-data root discovery, zero artifacts during idle backend boot, browser storage API access, and service-worker registration.
 - Highest-priority tests:
-  - M1-C05 harness self-check (detects a deliberate media/DB/settings file; zero writes on idle boot).
   - M3-C06 POC gate (play/pause/seek/retry/next; zero media files; flat relay memory; upstream closes on cancel).
   - M6-C05 full no-download scenario (**release-blocking**).
 - Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (from M4-C02), schema-drift check, storage-API lint.
@@ -85,7 +86,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-06
-- **Done:** Implemented M1-C04 Svelte/Vite/TypeScript shell, cancellable same-origin API client, error mapper, OpenAPI-generated API types, and schema-drift checker. Schema generation and mutation tests pass.
-- **Next:** Run frontend install, type-check, Vitest, and production build in an environment with Node.js/npm; then mark M1-C04 complete and proceed to M1-C05.
+- **Done:** Implemented M1-C05 live filesystem-write monitor, scenario runner, browser storage instrumentation/checker, and self-checks. Filesystem violations produce a report and non-zero exit; all five compliance tests pass.
+- **Next:** Validate and complete M1-C04 in an environment with Node.js/npm; then proceed to M1-C06.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

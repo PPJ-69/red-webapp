@@ -1,0 +1,2 @@
+playwright>=1.50,<2
+watchdog>=6,<7
