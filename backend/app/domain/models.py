@@ -1,4 +1,5 @@
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -70,6 +71,18 @@ class ErrorEnvelope(ApiModel):
 
 class HealthStatus(ApiModel):
     status: str
+
+
+@dataclass(frozen=True)
+class InternalSourceTarget:
+    url: str
+    headers: Mapping[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SourceResolution:
+    descriptor: MediaSource
+    target: InternalSourceTarget
 
 
 def canonical_model_schemas() -> dict[str, dict[str, Any]]:

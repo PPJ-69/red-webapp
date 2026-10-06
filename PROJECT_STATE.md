@@ -5,7 +5,7 @@
 
 ## Architecture Version
 - **v1 baseline.** ARCHITECTURE.md carries no version tag; this is the first checkpoint (2026-10-02).
-- Implementation progress: **1 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **3 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
@@ -13,16 +13,18 @@
 Exit gate: CI green; the harness catches a deliberate violation and reports zero writes on an idle app.
 
 ## Current Chunk
-**M1-C02: Provider interface, internal source target, fake provider**
+**M1-C04: Frontend foundation: typed API client and error mapper**
 - Status: not started.
-- Delivers: `UpstreamMediaProvider` interface, internal-only source target, injectable fake provider with fault cases, and reusable provider contract suite.
-- Depends on: M1-C01. Out of scope: real adapter, resolver logic, HTTP endpoints.
+- Delivers: typed cancellable frontend API client, backend error mapping, and OpenAPI schema-drift check.
+- Depends on: M1-C01. Out of scope: stores, UI components, browser storage APIs.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
+- **M1-C02:** Provider interface, internal source target, fake provider, and reusable provider contract. 12 additional unit/contract tests pass; internal target excluded from API models and schemas.
+- **M1-C03:** Request correlation middleware, stdout-only structured JSON logging with secret redaction, and predeclared in-process metrics registry. 12 focused observability tests pass.
 
 ## Upcoming Chunks
-**M1 (next):** C02 provider interface + fake provider · C03 redacting logging/metrics · C04 frontend typed API client · C05 no-persistence compliance harness (high risk, build early) · C06 CI/lockfiles/storage-API lint. C02–C05 can run in parallel after C01.
+**M1 (next):** C04 frontend typed API client · C05 no-persistence compliance harness (high risk, build early) · C06 CI/lockfiles/storage-API lint. C04–C05 can run in parallel.
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay (highest risk) · C05 concurrency limits · C06 POC page + gate
@@ -54,6 +56,7 @@ No implementation defects are currently known. Remaining document-level issues:
 
 ## Tests
 - **M1-C01:** 14 unit and integration tests passing, including startup configuration validation, canonical model contracts, full error-category mapping, health routes, OpenAPI schemas, and no-write startup check.
+- **M1-C03:** 12 tests pass for canary redaction, correlation in logs/error responses, stdout-only logging, and metric registry operations. Full backend suite: 38 tests passing.
 - Highest-priority tests:
   - M1-C05 harness self-check (detects a deliberate media/DB/settings file; zero writes on idle boot).
   - M3-C06 POC gate (play/pause/seek/retry/next; zero media files; flat relay memory; upstream closes on cancel).
@@ -81,7 +84,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-06
-- **Done:** Implemented M1-C01 backend core, canonical contracts, error envelope, health endpoints, and OpenAPI schemas. Chosen missing contract details are recorded in DECISIONS.md.
-- **Next:** Implement M1-C02 provider interface and fake provider.
+- **Done:** Implemented M1-C03 correlation middleware, safe structured logging, and in-process metrics registry. All 38 backend tests pass.
+- **Next:** Implement M1-C04 typed frontend API client and error mapper.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
