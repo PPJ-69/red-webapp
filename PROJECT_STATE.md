@@ -5,7 +5,7 @@
 
 ## Architecture Version
 - **v1 baseline.** ARCHITECTURE.md carries no version tag; this is the first checkpoint (2026-10-02).
-- Implementation progress: **0 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **1 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
@@ -13,13 +13,13 @@
 Exit gate: CI green; the harness catches a deliberate violation and reports zero writes on an idle app.
 
 ## Current Chunk
-**M1-C01: Backend core, error envelope, canonical models, health**
-- Status: not started. Gate **O5** applies (default: adopt D10 unless told otherwise).
-- Delivers: env-only config validated at startup; one error envelope (category, message, correlation ID, optional retry-after); canonical models (`MediaItem`, `MediaSource` with `playbackUrl`, `Creator`, `SearchResult`, `SearchQuery`); `GET /health/live` and `/health/ready` (no upstream calls); generated OpenAPI.
-- Depends on: nothing. Out of scope: upstream calls, sessions, rate limits, any non-health endpoint.
+**M1-C02: Provider interface, internal source target, fake provider**
+- Status: not started.
+- Delivers: `UpstreamMediaProvider` interface, internal-only source target, injectable fake provider with fault cases, and reusable provider contract suite.
+- Depends on: M1-C01. Out of scope: real adapter, resolver logic, HTTP endpoints.
 
 ## Completed Chunks
-None.
+- **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
 
 ## Upcoming Chunks
 **M1 (next):** C02 provider interface + fake provider · C03 redacting logging/metrics · C04 frontend typed API client · C05 no-persistence compliance harness (high risk, build early) · C06 CI/lockfiles/storage-API lint. C02–C05 can run in parallel after C01.
@@ -46,14 +46,14 @@ Hard gates: **M3-C06** must pass before any M4-C02 or full UI work. **M6-C05** b
 - Same-origin deployment by default (D12).
 
 ## Known Issues
-No code exists yet, so no defects. Document-level issues to resolve:
+No implementation defects are currently known. Remaining document-level issues:
 1. **Section references don't match.** ARCHITECTURE and PLAN cite requirement sections up to roughly §70 (e.g. the POC gate, error taxonomy, session TTL values, metric names). The uploaded REQUIREMENTS.md has 29 sections and doesn't contain those items. Confirm which document is the source of truth.
 2. **Session conflict.** REQUIREMENTS lists `/api/session*` endpoints (§12) and expired-session cleanup (§19, §27). ARCHITECTURE (O1) and the PLAN default to frontend-only state with backend sessions conditional (M5-C08). Needs explicit resolution before M5.
 3. **Repo layout differs.** REQUIREMENTS §25 (`api/providers/streaming/sessions/models`) vs PLAN (`domain/upstream/services/security/observability`). REQUIREMENTS allows changes; confirm the PLAN layout.
 4. **Milestone numbering differs** across docs (REQUIREMENTS M0–M8, ARCHITECTURE M1–M7, PLAN M1–M6). Use PLAN numbering.
 
 ## Tests
-- Written / passing: none.
+- **M1-C01:** 14 unit and integration tests passing, including startup configuration validation, canonical model contracts, full error-category mapping, health routes, OpenAPI schemas, and no-write startup check.
 - Highest-priority tests:
   - M1-C05 harness self-check (detects a deliberate media/DB/settings file; zero writes on idle boot).
   - M3-C06 POC gate (play/pause/seek/retry/next; zero media files; flat relay memory; upstream closes on cancel).
@@ -61,11 +61,11 @@ No code exists yet, so no defects. Document-level issues to resolve:
 - Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (from M4-C02), schema-drift check, storage-API lint.
 
 ## Open Decisions
-None resolved yet. Defaults apply if unresolved.
+O5 is resolved; other gates remain open and use their listed defaults until resolved.
 
 | Gate | Question | Blocks | Default |
 |---|---|---|---|
-| O5 | `playbackUrl` naming; stream relay-only; quality carried on `/source` | M1-C01 | Adopt D10 |
+| O5 | `playbackUrl` naming; stream relay-only; quality carried on `/source` | Resolved in M1-C01 | Adopt D10 |
 | O6 | Upstream terms, rate limits, permitted use | Live use in M2-C02, M3-C06 live smoke, any hosted release | Recorded fixtures only |
 | O3 / O4 | Direct-vs-relay privacy trade-off; HLS in v1 | M2-C05, M3-C04 | Conservative classifier (relay default); MP4 only |
 | O1 / O10 | Backend sessions in v1? Privacy Mode behavior | M5-C04, M5-C08 | Frontend-only; Privacy Mode locked ON (see Known Issue 2) |
@@ -80,8 +80,8 @@ None resolved yet. Defaults apply if unresolved.
 Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkable URLs).
 
 ## Last Handoff
-- **Date:** 2026-10-02
-- **Done:** Reviewed REQUIREMENTS, ARCHITECTURE, IMPLEMENTATION_PLAN and created this checkpoint. No code, scaffolding, or tests exist.
-- **Next:** Confirm the O5 default (or change it), then start M1-C01. Build M1-C05 (harness) early.
+- **Date:** 2026-10-06
+- **Done:** Implemented M1-C01 backend core, canonical contracts, error envelope, health endpoints, and OpenAPI schemas. Chosen missing contract details are recorded in DECISIONS.md.
+- **Next:** Implement M1-C02 provider interface and fake provider.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
