@@ -14,7 +14,7 @@ Exit gate: CI green; the harness catches a deliberate violation and reports zero
 
 ## Current Chunk
 **M1-C04: Frontend foundation: typed API client and error mapper**
-- Status: not started.
+- Status: implementation complete; production build, type check, and Vitest execution await an environment with Node.js/npm.
 - Delivers: typed cancellable frontend API client, backend error mapping, and OpenAPI schema-drift check.
 - Depends on: M1-C01. Out of scope: stores, UI components, browser storage APIs.
 
@@ -57,6 +57,7 @@ No implementation defects are currently known. Remaining document-level issues:
 ## Tests
 - **M1-C01:** 14 unit and integration tests passing, including startup configuration validation, canonical model contracts, full error-category mapping, health routes, OpenAPI schemas, and no-write startup check.
 - **M1-C03:** 12 tests pass for canary redaction, correlation in logs/error responses, stdout-only logging, and metric registry operations. Full backend suite: 38 tests passing.
+- **M1-C04:** OpenAPI-to-TypeScript drift check and deliberate-model-mutation test pass (2 tests). Vitest, Svelte type-check, and production build are not run because Node.js/npm are unavailable in the current environment.
 - Highest-priority tests:
   - M1-C05 harness self-check (detects a deliberate media/DB/settings file; zero writes on idle boot).
   - M3-C06 POC gate (play/pause/seek/retry/next; zero media files; flat relay memory; upstream closes on cancel).
@@ -84,7 +85,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-06
-- **Done:** Implemented M1-C03 correlation middleware, safe structured logging, and in-process metrics registry. All 38 backend tests pass.
-- **Next:** Implement M1-C04 typed frontend API client and error mapper.
+- **Done:** Implemented M1-C04 Svelte/Vite/TypeScript shell, cancellable same-origin API client, error mapper, OpenAPI-generated API types, and schema-drift checker. Schema generation and mutation tests pass.
+- **Next:** Run frontend install, type-check, Vitest, and production build in an environment with Node.js/npm; then mark M1-C04 complete and proceed to M1-C05.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

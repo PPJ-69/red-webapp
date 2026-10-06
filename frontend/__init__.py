@@ -1,0 +1,1 @@
+"""Frontend schema contract tooling."""

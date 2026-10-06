@@ -1,0 +1,28 @@
+{
+  "name": "stream-first-media-browser-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test:unit": "vitest run",
+    "check:schema": "python scripts/check_schema_drift.py",
+    "test:schema": "python -m unittest discover -s tests/unit -p test_schema_drift.py",
+    "test": "npm run check && npm run test:unit && npm run check:schema && npm run test:schema"
+  },
+  "dependencies": {
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.0"
+  }
+}

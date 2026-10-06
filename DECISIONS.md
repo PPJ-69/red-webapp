@@ -10,3 +10,9 @@
 - **C03-D1 — Request correlation:** Generate a fresh UUID for every request; do not trust a caller-supplied correlation ID. Store it in request/context-local state and return it as `X-Correlation-ID` and, for errors, as `correlationId`.
 - **C03-D2 — Log output and redaction:** Emit structured JSON to stdout only. Log route templates rather than raw URLs, never request headers or bodies, and redact authorization/bearer values, cookies, session fields, credentials, and sensitive signed-URL query parameters.
 - **C03-D3 — Initial metric registry:** Predeclare the stream metrics named by the implementation plan (`stream_requests_total`, `stream_bytes_forwarded_total`, `stream_active_connections`, `stream_first_byte_ms`, `stream_upstream_errors_total`) plus `direct_vs_relay_ratio`, referenced by the resolver plan. The registry is in-process, has no label dimensions, and stores histogram count/sum/maximum only. `browser_player_errors` remains excluded under G4.
+
+# M1-C04 Frontend API Contracts
+
+- **C04-D1 — API transport:** Frontend requests use origin-relative paths, with per-request `AbortSignal` cancellation; absolute and protocol-relative URLs are rejected. The client does not contain provider-specific hosts or credentials.
+- **C04-D2 — Frontend errors:** Backend error categories pass through unchanged when the shared envelope is valid. `network_error`, `malformed_response`, and `request_cancelled` describe client-side failures; malformed envelope/JSON data is not silently treated as a backend category.
+- **C04-D3 — Type source:** Canonical TypeScript API models are generated from the backend OpenAPI model schemas and checked for exact drift. No new API endpoints are introduced in this chunk.
