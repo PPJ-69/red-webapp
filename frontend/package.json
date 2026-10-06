@@ -4,16 +4,19 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test:unit": "vitest run",
+    "check:storage": "python scripts/check_storage_api.py",
+    "check:locks": "python scripts/check_lockfiles.py",
     "check:schema": "python scripts/check_schema_drift.py",
     "test:schema": "python -m unittest discover -s tests/unit -p test_schema_drift.py",
-    "test": "npm run check && npm run test:unit && npm run check:schema && npm run test:schema"
+    "test:quality-gates": "python -m unittest discover -s tests/unit -p test_quality_gates.py",
+    "test": "npm run check && npm run test:unit && npm run check:storage && npm run check:locks && npm run test:quality-gates && npm run check:schema && npm run test:schema"
   },
   "dependencies": {
     "svelte": "^5.0.0"
@@ -23,6 +26,6 @@
     "svelte-check": "^4.0.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
-    "vitest": "^2.1.0"
+    "vitest": "^5.0.3"
   }
 }

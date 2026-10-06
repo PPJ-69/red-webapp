@@ -5,27 +5,28 @@
 
 ## Architecture Version
 - **v1 baseline.** ARCHITECTURE.md carries no version tag; this is the first checkpoint (2026-10-02).
-- Implementation progress: **4 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **6 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
-**M1: Foundations & Compliance Harness**
-Exit gate: CI green; the harness catches a deliberate violation and reports zero writes on an idle app.
+**M2: Upstream Adapter & Media Resolution**
 
 ## Current Chunk
-**M1-C04: Frontend foundation: typed API client and error mapper**
-- Status: implementation complete; production build, type check, and Vitest execution await an environment with Node.js/npm.
-- Delivers: typed cancellable frontend API client, backend error mapping, and OpenAPI schema-drift check.
-- Depends on: M1-C01. Out of scope: stores, UI components, browser storage APIs.
+**M2-C01: Upstream auth manager and transport**
+- Status: pending; M1 foundations and compliance gates are implemented.
+- Depends on: M1-C02 and M1-C03.
+- Handoff: start with the auth manager, transport, and error-classification contracts in IMPLEMENTATION_PLAN.md.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
 - **M1-C02:** Provider interface, internal source target, fake provider, and reusable provider contract. 12 additional unit/contract tests pass; internal target excluded from API models and schemas.
 - **M1-C03:** Request correlation middleware, stdout-only structured JSON logging with secret redaction, and predeclared in-process metrics registry. 12 focused observability tests pass.
+- **M1-C04:** Frontend shell, cancellable typed API client, backend error mapper, generated OpenAPI types, and schema-drift check. Svelte check, 23 Vitest tests, schema tests, and production build pass.
 - **M1-C05:** Live filesystem/browser-storage compliance monitors and self-check. Detects media, database, settings writes including child-process writes; detects browser storage API access and service-worker registration. Seven self-check tests pass.
+- **M1-C06:** GitHub Actions CI, frontend storage-API lint, backend/frontend lockfiles, and dependency scans. Storage/lockfile gate tests pass; npm and Python dependency scans report no known vulnerabilities.
 
 ## Upcoming Chunks
-**M1 (next):** Complete C04 frontend validation when Node/npm are available; then C06 CI/lockfiles/storage-API lint (depends on C04 and C05).
+**M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay (highest risk) · C05 concurrency limits · C06 POC page + gate
@@ -58,8 +59,9 @@ No implementation defects are currently known. Remaining document-level issues:
 ## Tests
 - **M1-C01:** 14 unit and integration tests passing, including startup configuration validation, canonical model contracts, full error-category mapping, health routes, OpenAPI schemas, and no-write startup check.
 - **M1-C03:** 12 tests pass for canary redaction, correlation in logs/error responses, stdout-only logging, and metric registry operations. Full backend suite: 38 tests passing.
-- **M1-C04:** OpenAPI-to-TypeScript drift check and deliberate-model-mutation test pass (2 tests). Vitest, Svelte type-check, and production build are not run because Node.js/npm are unavailable in the current environment.
+- **M1-C04:** OpenAPI-to-TypeScript drift check and deliberate-model-mutation test pass (2 tests); Svelte check passes; 23 Vitest tests pass; production build succeeds.
 - **M1-C05:** Seven compliance tests pass: media/database/settings writes, child-process writes, committed-fixture exclusion, app-data root discovery, zero artifacts during idle backend boot, browser storage API access, and service-worker registration.
+- **M1-C06:** Frontend type-check, 23 Vitest tests, storage-API lint and fixture test, lockfile freshness/mutation tests, schema-drift checks, and production build pass. All 38 backend tests and seven compliance tests pass; idle filesystem scenario reports zero writes; browser monitor self-check passes. `npm audit` and `pip-audit` report no known vulnerabilities.
 - Highest-priority tests:
   - M3-C06 POC gate (play/pause/seek/retry/next; zero media files; flat relay memory; upstream closes on cancel).
   - M6-C05 full no-download scenario (**release-blocking**).
@@ -86,7 +88,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-06
-- **Done:** Implemented M1-C05 live filesystem-write monitor, scenario runner, browser storage instrumentation/checker, and self-checks. Filesystem violations produce a report and non-zero exit; all five compliance tests pass.
-- **Next:** Validate and complete M1-C04 in an environment with Node.js/npm; then proceed to M1-C06.
+- **Done:** Completed M1-C04 frontend validation and M1-C06 CI, lockfiles, storage-API lint, and dependency scans. All configured checks pass locally.
+- **Next:** Begin M2-C01 upstream auth manager and transport. The GitHub-hosted workflow run remains to be observed.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
