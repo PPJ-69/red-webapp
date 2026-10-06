@@ -81,6 +81,7 @@ class LockfileFreshnessTests(unittest.TestCase):
         digest = hashlib.sha256(manifest).hexdigest()
         lock = "# pyproject-sha256: " + digest
         self.assertEqual(backend_lock_errors(manifest, lock), [])
+        self.assertEqual(backend_lock_errors(manifest.replace(b"\n", b"\r\n"), lock), [])
         self.assertTrue(backend_lock_errors(manifest + b"# changed\n", lock))
 
     def test_compliance_manifest_mutation_fails_backend_lock_check(self) -> None:
@@ -91,6 +92,14 @@ class LockfileFreshnessTests(unittest.TestCase):
 
         self.assertEqual(
             backend_lock_errors(manifest, lock, compliance),
+            [],
+        )
+        self.assertEqual(
+            backend_lock_errors(
+                manifest.replace(b"\n", b"\r\n"),
+                lock,
+                compliance.replace(b"\n", b"\r\n"),
+            ),
             [],
         )
         self.assertTrue(

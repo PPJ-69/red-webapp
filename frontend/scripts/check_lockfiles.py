@@ -35,8 +35,10 @@ def backend_lock_errors(
     lockfile: str,
     compliance_requirements: bytes = b"",
 ) -> list[str]:
-    digest_source = pyproject + (
-        b"\0" + compliance_requirements if compliance_requirements else b""
+    normalized_pyproject = pyproject.replace(b"\r\n", b"\n")
+    normalized_compliance = compliance_requirements.replace(b"\r\n", b"\n")
+    digest_source = normalized_pyproject + (
+        b"\0" + normalized_compliance if compliance_requirements else b""
     )
     digest = hashlib.sha256(digest_source).hexdigest()
     expected = f"# pyproject-sha256: {digest}"
