@@ -58,6 +58,7 @@ def _envelope_response(
     retry_after: int | None = None,
 ) -> JSONResponse:
     correlation_id = getattr(request.state, "correlation_id", None) or str(uuid4())
+    request.state.error_category = category.value
     envelope = ErrorEnvelope(
         category=category,
         message=message,

@@ -8,14 +8,18 @@ from .api.health import router as health_router
 from .dependencies import get_settings
 from .domain.errors import register_exception_handlers
 from .domain.models import canonical_model_schemas
+from .observability.logging import configure_logging, install_request_context
+from .observability.metrics import metrics
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = get_settings()
+    app.state.metrics = metrics
     yield
 
 
+configure_logging()
 app = FastAPI(
     title="Stream-First Media Browser API",
     version="0.1.0",
@@ -23,6 +27,7 @@ app = FastAPI(
 )
 app.include_router(health_router)
 register_exception_handlers(app)
+install_request_context(app)
 
 
 def _openapi_with_canonical_models() -> dict:
