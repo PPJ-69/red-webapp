@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.1 — fail-closed upstream target validation.** Added a relay allowlist and private-IP rejection for upstream media targets; this is the first durable architecture-level security gate beyond the baseline (2026-10-08).
-- Implementation progress: **11 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **12 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M3: Streaming Relay (POC Gate)**
 
 ## Current Chunk
-**M3-C03: Fake upstream CDN with fault injection**
+**M3-C04: Streaming relay endpoint**
 - Status: pending.
-- Depends on: M1-C02.
-- Handoff: implement the local Range-capable fake CDN and fault injection before adding relay I/O.
+- Depends on: M3-C01, M3-C02, M3-C03, M1-C02.
+- Handoff: add the ID-only streaming route, bounded upstream transport, and disconnect-safe forwarding using the security/range contracts and fake CDN.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -31,12 +31,13 @@
 - **M2-C05:** Media resolver and source descriptor endpoint complete. Added source cache, resolver classification, `/api/media/{id}/source`, and integration/unit coverage.
 - **M3-C01:** Relay security guardrails complete. Added `UPSTREAM_ALLOWED_HOSTS`, strict HTTPS/private-range validation, and a focused validation unit suite that rejects allowlist violations and localhost/private targets.
 - **M3-C02:** Pure Range parsing and downstream response semantics complete. Added named tests for closed/open/suffix ranges, malformed and multi-range handling, upstream 200/206/416 behavior, safe response headers, and unknown/known object sizes.
+- **M3-C03:** Added a loopback-only Range-capable fake CDN, a 272-byte AVI fixture, bounded synthetic responses, status/latency/disconnect/auth/signature/header/range faults, connection counters, a shared test context manager, and fake-provider CDN targeting.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
-- **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN (current) · C04 stream relay (highest risk) · C05 concurrency limits · C06 POC page + gate
+- **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay (current; highest risk) · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
@@ -70,6 +71,7 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M1-C05:** Seven compliance tests pass: media/database/settings writes, child-process writes, committed-fixture exclusion, app-data root discovery, zero artifacts during idle backend boot, browser storage API access, and service-worker registration.
 - **M1-C06:** Frontend type-check, 23 Vitest tests, storage-API lint and fixture test, lockfile freshness/mutation tests, schema-drift checks, and production build pass. All 38 backend tests and seven compliance tests pass; idle filesystem scenario reports zero writes; browser monitor self-check passes. `npm audit` and `pip-audit` report no known vulnerabilities.
 - **M3-C02:** 17 focused range-semantics tests pass. The pure module performs no network I/O or endpoint wiring.
+- **M3-C03:** 13 focused fake-CDN/provider tests pass; the full backend suite passes (104 tests). Fault coverage includes all injected statuses and non-status behaviors, byte ranges, synthetic streaming, and client disconnect counter cleanup.
 - Highest-priority tests:
   - M3-C06 POC gate (play/pause/seek/retry/next; zero media files; flat relay memory; upstream closes on cancel).
   - M6-C05 full no-download scenario (**release-blocking**).
@@ -96,7 +98,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M3-C02: pure single-range parsing and 200/206/416 downstream response mapping, with safe header forwarding.
-- **Next:** Implement M3-C03 fake CDN with Range support and injectable transport faults; keep real relay I/O out of scope.
+- **Done:** Completed M3-C03: local fake CDN with Range support, bounded synthetic content, injected transport faults, and connection lifecycle counters.
+- **Next:** Implement M3-C04 relay endpoint and streaming transport; build on fake-CDN integration coverage without moving concurrency controls into this chunk.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

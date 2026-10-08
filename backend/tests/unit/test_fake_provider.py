@@ -20,6 +20,7 @@ from backend.app.domain.models import (
 )
 from backend.app.upstream.provider import UpstreamMediaProvider
 from backend.tests.contract.provider_contract import ProviderContract
+from backend.tests.conftest import fake_cdn_server
 from backend.tests.fakes.fake_provider import FakeMediaProvider, FakeProviderFault
 
 
@@ -29,6 +30,18 @@ class FakeProviderContractTests(ProviderContract, unittest.IsolatedAsyncioTestCa
 
 
 class FakeProviderTests(unittest.IsolatedAsyncioTestCase):
+    async def test_provider_can_resolve_media_to_the_fake_cdn(self) -> None:
+        with fake_cdn_server() as cdn:
+            provider = FakeMediaProvider(cdn_base_url=cdn.base_url)
+
+            target = await provider.resolve_source("sample-media", "auto")
+
+        self.assertEqual(
+            target.url,
+            f"{cdn.base_url}/media/sample-media-auto.avi?signature=valid",
+        )
+        self.assertEqual(target.headers, {"X-Fake-Provider": "test"})
+
     async def test_fake_provider_faults_are_explicit(self) -> None:
         expected = {
             FakeProviderFault.NOT_FOUND: ErrorCategory.NOT_FOUND,

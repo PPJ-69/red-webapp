@@ -23,9 +23,13 @@ class FakeProviderFault(str, Enum):
 
 class FakeMediaProvider:
     def __init__(
-        self, faults: Mapping[str, FakeProviderFault] | None = None
+        self,
+        faults: Mapping[str, FakeProviderFault] | None = None,
+        *,
+        cdn_base_url: str | None = None,
     ) -> None:
         self._faults = dict(faults or {})
+        self._cdn_base_url = cdn_base_url.rstrip("/") if cdn_base_url else None
         self._media = MediaItem(
             id="sample-media",
             title="Sample media",
@@ -93,6 +97,14 @@ class FakeMediaProvider:
         self._raise_configured_fault("resolve_source")
         if media_id != self._media.id:
             raise ApplicationError(ErrorCategory.NOT_FOUND, "The requested media was not found.")
+        if self._cdn_base_url is not None:
+            return InternalSourceTarget(
+                url=(
+                    f"{self._cdn_base_url}/media/{media_id}-{quality}.avi"
+                    "?signature=valid"
+                ),
+                headers={"X-Fake-Provider": "test"},
+            )
         return InternalSourceTarget(
             url=f"https://cdn.example.invalid/media/{media_id}-{quality}.mp4",
             headers={"X-Fake-Provider": "test"},
