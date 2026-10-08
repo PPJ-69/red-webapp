@@ -78,3 +78,8 @@
 
 - **C01-D1 — Query parity:** The frontend parser follows the backend token normalization contract; shared JSON vectors are exercised by both frontend and backend tests. Creator tokens embedded in query text are normalized into `q`; an explicit creator filter uses the existing `creator` parameter, while tags remain repeated `tags` parameters.
 - **C01-D2 — Search lifecycle:** Search metadata and item maps are held in RAM only. A new query aborts and supersedes the previous request; page requests are sequential and deduplicate items by ID. Failed or superseded requests do not replace already loaded items.
+
+# M5-C02 Search Controls Contracts
+
+- **C02-D1 — Search filters:** Search order is limited to trending/latest/top/score; page size accepts integers 1–100 and defaults to 20.
+- **C02-D2 — Tag suggestions:** Autocomplete starts at two characters after a 250 ms debounce. New input aborts and supersedes older work; malformed API responses and non-cancellation failures are surfaced to the user.

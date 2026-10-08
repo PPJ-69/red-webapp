@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **23 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **24 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M5: Discovery UI & Session Features**
 
 ## Current Chunk
-**M5-C02: SearchBar, filters, autocomplete**
+**M5-C03: ResultGrid, ResultCard, infinite scroll**
 - Status: pending.
-- Depends on: M5-C01, M2-C04.
-- Handoff: implement only the search bar, filters, and cancellable debounced tag autocomplete; keep saved searches/history out of scope.
+- Depends on: M5-C01.
+- Handoff: implement responsive result grid/cards and a one-at-a-time infinite-scroll sentinel; do not wire player selection, favorite, or seen behavior.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -46,7 +46,7 @@
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
-- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar (current) · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
+- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll (current) · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
 Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
@@ -88,10 +88,11 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M4-C04:** All 118 frontend unit tests pass, including the selected keyboard map, modifier/repeat handling, and typing-focus suppression including contenteditable variants. Svelte type-check, production build, storage policy check, and Chromium E2E pass for mute, volume, speed, loop, fullscreen, keyboard seek, shortcut-help dialog, and accessible control names. Existing lifecycle and recovery browser suites also pass.
 - **M4-C05:** Added an array-backed in-memory queue with previous/next/random, seen-aware selection and change notifications; a player overlay with navigation/close; and one-item source-descriptor prefetch that never requests non-current media bytes. Skip and keyboard navigation now use the queue; ended behavior honors loop/autoplay/queue bounds, and close restores scroll position and opener focus. All 127 frontend unit tests pass; type-check, build, storage policy check, and all seven fake-provider lifecycle/recovery/controls/navigation Chromium tests pass.
 - **M5-C01:** Added a typed query parser with creator/tag chips and mode normalization, shared fixtures checked against the backend normalizer, and an in-memory search context with page loading, deduplication, cancellation/supersession, and failure-safe retention of loaded items. Frontend type-check, all 143 frontend unit tests, production build, storage policy check, the backend suite, and shared-vector parity tests pass.
+- **M5-C02:** Added accessible SearchBar and SearchFilters components, normalized chip previews, trending/latest/top/score ordering, 1–100 page size, and tag suggestions with a 250 ms debounce, two-character minimum, active-request cancellation, and surfaced errors. Wired search submissions through the M5-C01 context; tests verify serialized query parameters and that typing does not trigger player shortcuts. All 148 frontend unit tests, type-check, production build, storage policy check, and the fake-provider browser search test pass.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
-- Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls, navigation), schema-drift check, storage-API lint.
+- Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls, navigation, search), schema-drift check, storage-API lint.
 
 ## Open Decisions
 O5 is resolved; other gates remain open and use their listed defaults until resolved.
@@ -113,7 +114,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M5-C01: query normalization and chip parsing, shared frontend/backend parity vectors, and the cancellable RAM-only search context with deduplicated pagination.
-- **Next:** M5-C02 SearchBar, filters, and tag autocomplete. Keep saved searches/history out of scope; do not integrate result cards or player queue before their planned chunks.
+- **Done:** Completed M5-C02: accessible search and filter controls, debounced cancellable tag suggestions, parsed chip previews, and request wiring to the RAM-only search context.
+- **Next:** M5-C03 responsive result cards/grid and infinite scroll. Keep player queue integration, favorite, and seen behavior out of scope.
 - **Watch:** Live-provider use remains gated by O6. Backend sessions remain conditional pending O1/O10; preserve RAM-only metadata and the no-browser-storage policy.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

@@ -3,8 +3,10 @@
 
   import MediaPlayer from "./components/MediaPlayer.svelte";
   import PlayerOverlay from "./components/PlayerOverlay.svelte";
+  import SearchBar from "./components/SearchBar.svelte";
   import { ArrayPlaybackQueue } from "./services/playbackQueue";
   import { PlaybackPrefetcher } from "./services/prefetch";
+  import { searchContextStore } from "./stores/searchContextStore";
   import { sourceService } from "./services/sourceService";
   import type { MediaSource } from "./types/api";
   import type { QueueItem } from "./services/playbackQueue";
@@ -29,6 +31,8 @@
   let playerOpener: HTMLButtonElement;
   let savedScrollPosition = 0;
   let prefetchAnnouncement = "";
+  let searchAnnouncement = "";
+  let searchError = "";
   let muted = true;
   let loop = false;
   let volume = 1;
@@ -100,12 +104,35 @@
     playerState = event.detail.state;
   }
 
+  async function submitSearch(
+    event: CustomEvent<{
+      rawQuery: string;
+      order: "trending" | "latest" | "top" | "score";
+      limit: number;
+    }>,
+  ): Promise<void> {
+    searchError = "";
+    searchAnnouncement = "Searching…";
+    const succeeded = await searchContextStore.search(event.detail.rawQuery, {
+      order: event.detail.order,
+      limit: event.detail.limit,
+    });
+    const result = searchContextStore.getSnapshot();
+    if (succeeded) {
+      searchAnnouncement = `${result.itemsById.size} results loaded.`;
+    } else if (result.error !== null) {
+      searchAnnouncement = "";
+      searchError = "Search could not be completed. Please try again.";
+    }
+  }
+
   onMount(() => {
     const unsubscribe = playbackQueue.subscribe(updateQueue);
     updateQueue(playbackQueue.current);
     return () => {
       unsubscribe();
       prefetcher.cancel();
+      searchContextStore.discard();
     };
   });
 </script>
@@ -116,6 +143,13 @@
 
 <main>
   <h1>Stream-First Media Browser</h1>
+  <SearchBar on:submit={submitSearch} />
+  <p data-testid="search-status" role="status" aria-live="polite">
+    {searchAnnouncement}
+  </p>
+  {#if searchError}
+    <p data-testid="search-error" role="alert">{searchError}</p>
+  {/if}
   <label for="item">Test media</label>
   <select
     id="item"
