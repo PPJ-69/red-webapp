@@ -29,6 +29,9 @@ class Creator(ApiModel):
 class MediaSource(ApiModel):
     playback_url: str
     mime_type: str | None = None
+    kind: str | None = None
+    requires_relay: bool | None = None
+    expires_at: Any | None = None
 
 
 class MediaItem(ApiModel):

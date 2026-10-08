@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1 baseline.** ARCHITECTURE.md carries no version tag; this is the first checkpoint (2026-10-02).
-- Implementation progress: **8 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **9 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M2: Upstream Adapter & Media Resolution**
 
 ## Current Chunk
-**M2-C05: Media Resolver and source descriptor endpoint**
+**M3-C01: Relay security guardrails**
 - Status: pending.
-- Depends on: M2-C02, M2-C03, M2-C04.
-- Handoff: implement the resolver and `/api/media/{id}/source` boundary as defined in IMPLEMENTATION_PLAN.md.
+- Depends on: M2-C05.
+- Handoff: continue with the relay security validation gate in IMPLEMENTATION_PLAN.md before any streaming work.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -28,6 +28,7 @@
 - **M2-C02:** RedGIFs adapter + canonical media mapper using fixture-backed payloads; provider contract suite passes and raw upstream fields remain isolated behind canonical models.
 - **M2-C03:** Search/listing pipeline complete. Added query normalization, `/api/search` endpoint, provider-backed search service, and focused tests for normalization and API behavior. Targeted backend tests pass.
 - **M2-C04:** Creator lookup and tag-suggestion endpoints complete. Added backend creator/tag services, API routes, and validation tests using the existing fake provider.
+- **M2-C05:** Media resolver and source descriptor endpoint complete. Added source cache, resolver classification, `/api/media/{id}/source`, and integration/unit coverage.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -92,7 +93,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M2-C04: canonical creator lookup and tag suggestion routes, with service-level validation and integration coverage.
-- **Next:** Implement M2-C05 resolver + `/api/media/{id}/source` without changing the provider adapter or canonical API contracts.
+- **Done:** Completed M2-C05: media resolver, source cache, and `/api/media/{id}/source` descriptor route, with unit/integration validation.
+- **Next:** Implement M3-C01 relay security guardrails before any relay I/O work.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

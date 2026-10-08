@@ -6,6 +6,7 @@ from fastapi.openapi.utils import get_openapi
 
 from .api.creators import router as creators_router
 from .api.health import router as health_router
+from .api.media import router as media_router
 from .api.search import router as search_router
 from .api.tags import router as tags_router
 from .dependencies import get_settings
@@ -31,6 +32,7 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(search_router)
 app.include_router(creators_router)
+app.include_router(media_router)
 app.include_router(tags_router)
 register_exception_handlers(app)
 install_request_context(app)
