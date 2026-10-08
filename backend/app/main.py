@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 
 from .api.health import router as health_router
+from .api.search import router as search_router
 from .dependencies import get_settings
 from .domain.errors import register_exception_handlers
 from .domain.models import canonical_model_schemas
@@ -26,6 +27,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(health_router)
+app.include_router(search_router)
 register_exception_handlers(app)
 install_request_context(app)
 

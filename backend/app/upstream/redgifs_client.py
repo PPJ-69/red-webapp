@@ -59,11 +59,21 @@ class RedgifsClient:
         return response.json()
 
     async def search(self, query: SearchQuery) -> SearchResult:
-        payload = await self._request_json(
-            "GET",
-            "/search",
-            params={"q": query.query or "", "page": query.page, "limit": query.limit},
-        )
+        terms = []
+        if query.query:
+            terms.append(query.query)
+        for tag in query.tags:
+            terms.append(f"#{tag}")
+        params: dict[str, Any] = {
+            "q": " ".join(terms).strip(),
+            "page": query.page,
+            "limit": query.limit,
+        }
+        if query.mode:
+            params["mode"] = query.mode
+        if query.order:
+            params["order"] = query.order
+        payload = await self._request_json("GET", "/search", params=params)
         return normalize_search_result(payload, query=query)
 
     async def get_media(self, media_id: str) -> MediaItem:
