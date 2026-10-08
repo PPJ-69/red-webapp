@@ -1,3 +1,4 @@
+import re
 from collections.abc import Mapping
 from uuid import uuid4
 
@@ -36,6 +37,38 @@ _HTTP_STATUS_CATEGORIES = {
     429: ErrorCategory.RATE_LIMITED,
 }
 
+_UPSTREAM_STATUS_CATEGORIES = {
+    400: ErrorCategory.INVALID_REQUEST,
+    401: ErrorCategory.UPSTREAM_AUTHENTICATION_FAILED,
+    403: ErrorCategory.FORBIDDEN,
+    404: ErrorCategory.NOT_FOUND,
+    408: ErrorCategory.UPSTREAM_TIMEOUT,
+    409: ErrorCategory.PROVIDER_ERROR,
+    416: ErrorCategory.RANGE_NOT_SATISFIABLE,
+    429: ErrorCategory.RATE_LIMITED,
+    500: ErrorCategory.PROVIDER_ERROR,
+    502: ErrorCategory.PROVIDER_ERROR,
+    503: ErrorCategory.PROVIDER_UNAVAILABLE,
+    504: ErrorCategory.UPSTREAM_TIMEOUT,
+}
+
+
+def classify_upstream_status(status_code: int | None) -> ErrorCategory:
+    if status_code is None:
+        return ErrorCategory.PROVIDER_UNAVAILABLE
+    return _UPSTREAM_STATUS_CATEGORIES.get(status_code, ErrorCategory.PROVIDER_ERROR)
+
+
+def classify_upstream_error(exc: Exception, *, status_code: int | None = None) -> ErrorCategory:
+    if status_code is not None:
+        return classify_upstream_status(status_code)
+    name = exc.__class__.__name__
+    if "Timeout" in name:
+        return ErrorCategory.UPSTREAM_TIMEOUT
+    if "Connect" in name or "Network" in name:
+        return ErrorCategory.PROVIDER_UNAVAILABLE
+    return ErrorCategory.PROVIDER_ERROR
+
 
 class ApplicationError(Exception):
     def __init__(
@@ -44,10 +77,21 @@ class ApplicationError(Exception):
         message: str,
         retry_after: int | None = None,
     ) -> None:
-        super().__init__(message)
+        sanitized = self._sanitize_message(message)
+        super().__init__(sanitized)
         self.category = category
-        self.message = message
+        self.message = sanitized
         self.retry_after = retry_after
+
+    @staticmethod
+    def _sanitize_message(message: str) -> str:
+        if not message:
+            return message
+        pattern = (
+            r"(?i)(?:bearer\s+|authorization\s*[:=]\s*|token\s*[:=]?\s+)[A-Za-z0-9._~+/-]+"
+            r"(?:-[A-Za-z0-9._~+/-]+)*"
+        )
+        return re.sub(pattern, "[REDACTED]", message)
 
 
 def _envelope_response(

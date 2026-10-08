@@ -16,3 +16,9 @@
 - **C04-D1 — API transport:** Frontend requests use origin-relative paths, with per-request `AbortSignal` cancellation; absolute and protocol-relative URLs are rejected. The client does not contain provider-specific hosts or credentials.
 - **C04-D2 — Frontend errors:** Backend error categories pass through unchanged when the shared envelope is valid. `network_error`, `malformed_response`, and `request_cancelled` describe client-side failures; malformed envelope/JSON data is not silently treated as a backend category.
 - **C04-D3 — Type source:** Canonical TypeScript API models are generated from the backend OpenAPI model schemas and checked for exact drift. No new API endpoints are introduced in this chunk.
+
+# M2-C01 Upstream Auth & Transport Contracts
+
+- **C01-D1 — Token lifetime and refresh:** Upstream auth tokens are held in memory only, with a TTL and refresh leeway; refreshes are serialized so concurrent callers share a single in-flight refresh.
+- **C01-D2 — Failure classification:** Upstream outcomes map to stable application categories without leaking provider credentials or raw auth headers into exception text. A 401 triggers a single refresh attempt before the request is retried; 400/404/416 are terminal assertions, while 429/5xx paths are retried with bounded exponential backoff and `Retry-After` when present.
+- **C01-D3 — Transport boundary:** The upstream transport owns connect/read timeout controls and handles provider connectivity, timeout, and retry behavior; it never exposes raw upstream auth values to the browser or logs.
