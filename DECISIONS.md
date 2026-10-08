@@ -51,3 +51,8 @@
 - **C05-D1 — Per-client stream slots:** Enforce `MAX_ACTIVE_STREAMS_PER_IP` in the relay API before source resolution or upstream opening. Its initial configurable default is 3 pending load-based tuning in M6-C03. A slot remains held until the downstream response completes or is cancelled, and local cap failures use `local_rate_limited` with HTTP 429 and `Retry-After: 1`.
 - **C05-D2 — Proxy trust:** Use `X-Forwarded-For` only when the immediate peer matches `TRUSTED_PROXY_IPS`; walk the chain from the trusted peer and select the nearest untrusted address. Invalid chains fall back to the socket peer.
 - **C05-D3 — Relay metric updates:** Increment request and upstream-error counters at route/open and body-failure boundaries; count yielded body bytes, observe time to first nonempty body chunk, and maintain the active-connection gauge with acquired stream slots. Metrics remain process-local and unlabeled.
+
+# M3-C06 Streaming POC Contracts
+
+- **C06-D1 — Development-only fixture path:** The native-video proof page is a Vite development entry explicitly excluded from production Rollup inputs. Its test API and fixture-upload/fault controls live only under `backend.tests`, use a port-scoped loopback fake CDN, and are not registered in the production application.
+- **C06-D2 — Gate evidence:** Browser playback is exercised with a WebM clip generated and kept in browser memory. The relay memory test uses deterministic synthetic bytes; compliance monitors cover the browser session and repository while playback is running. Live provider use remains gated by O6.

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Development Streaming POC</title>
+  </head>
+  <body>
+    <main id="poc">
+      <h1>Streaming relay proof</h1>
+      <p>This development-only page exercises native playback through the API relay.</p>
+      <label for="media">Test item</label>
+      <select id="media" data-testid="media-select">
+        <option value="sample-media">Sample media</option>
+        <option value="sample-media-two">Second sample</option>
+        <option value="sample-media-failure">Failure retry sample</option>
+      </select>
+      <div class="actions">
+        <button id="load" data-testid="load">Load item</button>
+        <button id="play" data-testid="play">Play</button>
+        <button id="pause" data-testid="pause">Pause</button>
+        <button id="seek-back" data-testid="seek-back">Seek back 2s</button>
+        <button id="seek-forward" data-testid="seek-forward">Seek forward 2s</button>
+        <button id="inject-failure" data-testid="inject-failure">Inject upstream failure</button>
+        <button id="retry" data-testid="retry">Retry</button>
+        <button id="next" data-testid="next">Next item</button>
+        <button id="stop" data-testid="stop">Stop and disconnect</button>
+      </div>
+      <video id="player" data-testid="player" controls playsinline preload="metadata"></video>
+      <p id="status" data-testid="status" role="status" aria-live="polite">Ready</p>
+      <p id="source-kind" data-testid="source-kind">No source loaded</p>
+    </main>
+    <script type="module" src="/src/poc.ts"></script>
+  </body>
+</html>

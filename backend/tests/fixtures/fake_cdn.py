@@ -51,6 +51,7 @@ class _FakeCDNServer(ThreadingHTTPServer):
         self.sample_body = sample_body
         self.chunk_delay = chunk_delay
         self.state_lock = threading.Lock()
+        self.sample_content_type = "video/x-msvideo"
         self.fault_lock = threading.Lock()
         self.fault: FakeCDNFault | None = None
         self.connections_opened = 0
@@ -83,6 +84,15 @@ class _FakeCDNServer(ThreadingHTTPServer):
                 self.connections_closed,
                 self.active_connections,
             )
+
+    def replace_sample_body(self, body: bytes, content_type: str) -> None:
+        with self.state_lock:
+            self.sample_body = body
+            self.sample_content_type = content_type
+
+    def sample_object(self) -> tuple[bytes, str]:
+        with self.state_lock:
+            return self.sample_body, self.sample_content_type
 
 
 class _FakeCDNHandler(BaseHTTPRequestHandler):
@@ -153,7 +163,11 @@ class _FakeCDNHandler(BaseHTTPRequestHandler):
         content_length = max(0, end - start + 1)
         status = 206 if partial else 200
         self.send_response(status)
-        self.send_header("Content-Type", "video/x-msvideo" if not is_synthetic else "video/mp4")
+        _, sample_content_type = self.fake_server.sample_object()
+        self.send_header(
+            "Content-Type",
+            "video/mp4" if is_synthetic else sample_content_type,
+        )
         self.send_header("Accept-Ranges", "bytes")
         self.send_header("Cache-Control", "no-store")
         if partial:
@@ -180,7 +194,8 @@ class _FakeCDNHandler(BaseHTTPRequestHandler):
 
     def _resolve_object(self, path: str) -> tuple[int | None, bool]:
         if path.startswith("/media/"):
-            return len(self.fake_server.sample_body), False
+            sample_body, _ = self.fake_server.sample_object()
+            return len(sample_body), False
         match = re.fullmatch(r"/synthetic/(\d+)", path)
         if match is not None:
             return int(match.group(1)), True
@@ -214,7 +229,8 @@ class _FakeCDNHandler(BaseHTTPRequestHandler):
     def _read_chunk(self, offset: int, length: int, synthetic: bool) -> bytes:
         if synthetic:
             return next(iter_synthetic_body(length, offset), b"")
-        return self.fake_server.sample_body[offset : offset + length]
+        sample_body, _ = self.fake_server.sample_object()
+        return sample_body[offset : offset + length]
 
     def _send_error(self, status: int, message: str) -> None:
         body = message.encode("utf-8")
@@ -256,11 +272,14 @@ class FakeCDN:
 
     @property
     def sample_size(self) -> int:
-        return len(self._server.sample_body)
+        return len(self._server.sample_object()[0])
 
     @property
     def sample_bytes(self) -> bytes:
-        return self._server.sample_body
+        return self._server.sample_object()[0]
+
+    def set_sample_body(self, body: bytes, content_type: str) -> None:
+        self._server.replace_sample_body(body, content_type)
 
     @property
     def connection_counts(self) -> tuple[int, int, int]:
