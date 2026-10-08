@@ -12,10 +12,10 @@
 **M2: Upstream Adapter & Media Resolution**
 
 ## Current Chunk
-**M2-C04: Creator profile and tag suggestions**
+**M2-C05: Media Resolver and source descriptor endpoint**
 - Status: pending.
-- Depends on: M2-C02, M2-C03.
-- Handoff: continue with the creator and tag-discovery surface introduced in IMPLEMENTATION_PLAN.md.
+- Depends on: M2-C02, M2-C03, M2-C04.
+- Handoff: implement the resolver and `/api/media/{id}/source` boundary as defined in IMPLEMENTATION_PLAN.md.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -27,6 +27,7 @@
 - **M2-C01:** Upstream auth manager, single-flight refresh behavior, bounded retry transport, and upstream error classification. Ten focused tests pass; token values stay out of exception text.
 - **M2-C02:** RedGIFs adapter + canonical media mapper using fixture-backed payloads; provider contract suite passes and raw upstream fields remain isolated behind canonical models.
 - **M2-C03:** Search/listing pipeline complete. Added query normalization, `/api/search` endpoint, provider-backed search service, and focused tests for normalization and API behavior. Targeted backend tests pass.
+- **M2-C04:** Creator lookup and tag-suggestion endpoints complete. Added backend creator/tag services, API routes, and validation tests using the existing fake provider.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -91,7 +92,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M2-C03: normalized search/listing behavior, `/api/search` endpoint, provider-backed service path, and focused tests for query parsing and validation.
-- **Next:** Implement M2-C04 creator profile and tag suggestions without changing the search contract or adapter boundary.
+- **Done:** Completed M2-C04: canonical creator lookup and tag suggestion routes, with service-level validation and integration coverage.
+- **Next:** Implement M2-C05 resolver + `/api/media/{id}/source` without changing the provider adapter or canonical API contracts.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
