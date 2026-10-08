@@ -36,7 +36,7 @@ The architecture's 7 milestones are consolidated to 6 by merging Hardening and R
 | **O3 / O4** | Direct-vs-relay privacy trade-off; HLS in v1 | M2-C05, M3-C04 | Conservative classifier; MP4 only (D11) |
 | **O1 / O10** | Backend sessions in v1? Privacy Mode behavior | M5-C04, M5-C08 | Frontend-only state; Privacy Mode locked ON |
 | **O12** | Browser support matrix | M4-C02 E2E | Latest evergreen desktop + mobile browsers |
-| **(INF) G1** | No local rate-limit category exists in the §33 taxonomy | M3-C05 | Add an internal `LOCAL_RATE_LIMITED` category |
+| **(INF) G1** | No local rate-limit category exists in the §33 taxonomy | M3-C05 | Resolved in M3-C05: add `LOCAL_RATE_LIMITED` with HTTP 429 |
 | **(INF) G2** | Multi-range `Range` header behavior (spec only requires single ranges) | M3-C02 | Treat as unsupported and answer as if no Range was sent |
 | **(INF) G3** | Definition of "seen" | M5-C05 | Mark seen when playback begins |
 | **OPEN G4** | `browser_player_errors` metric (§37) needs a reporting path the API list does not define | M6-C02 | Not implemented; count locally in RAM only |

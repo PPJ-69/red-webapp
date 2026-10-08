@@ -18,6 +18,7 @@ ERROR_STATUS_CODES: Mapping[ErrorCategory, int] = {
     ErrorCategory.FORBIDDEN: 403,
     ErrorCategory.NOT_FOUND: 404,
     ErrorCategory.RATE_LIMITED: 429,
+    ErrorCategory.LOCAL_RATE_LIMITED: 429,
     ErrorCategory.UPSTREAM_AUTHENTICATION_FAILED: 502,
     ErrorCategory.PROVIDER_UNAVAILABLE: 503,
     ErrorCategory.PROVIDER_ERROR: 502,

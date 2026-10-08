@@ -13,6 +13,7 @@ const BACKEND_ERROR_CATEGORIES: ReadonlySet<string> = new Set([
   "forbidden",
   "not_found",
   "rate_limited",
+  "local_rate_limited",
   "upstream_authentication_failed",
   "provider_unavailable",
   "provider_error",

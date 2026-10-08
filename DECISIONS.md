@@ -2,7 +2,7 @@
 
 - **C01-D1 — Runtime configuration:** `APP_ENV` is the required environment-only setting for the backend core. Accepted values are `development`, `test`, and `production`; startup fails when it is absent or invalid. Later chunks add their own configuration only when required.
 - **C01-D2 — Canonical models:** API model attributes serialize with camelCase aliases. `MediaItem` requires `id` and `title`; remaining descriptive metadata is optional or an empty collection when absent. `MediaSource` exposes `playbackUrl` and optional `mimeType`; extra fields are forbidden so internal source targets cannot leak through serialization.
-- **C01-D3 — Error envelope:** Categories use stable snake_case values with this HTTP mapping: `invalid_request`/`invalid_media_id` 400, `unauthorized` 401, `forbidden` 403, `not_found` 404, `unsupported_media` 415, `range_not_satisfiable` 416, `rate_limited` 429, `upstream_authentication_failed`/`provider_error`/`connection_interrupted` 502, `provider_unavailable` 503, `upstream_timeout` 504, and `internal_error` 500. Envelopes contain `category`, `message`, `correlationId`, and optional `retryAfter` seconds.
+- **C01-D3 — Error envelope:** Categories use stable snake_case values with this HTTP mapping: `invalid_request`/`invalid_media_id` 400, `unauthorized` 401, `forbidden` 403, `not_found` 404, `unsupported_media` 415, `range_not_satisfiable` 416, `rate_limited`/`local_rate_limited` 429, `upstream_authentication_failed`/`provider_error`/`connection_interrupted` 502, `provider_unavailable` 503, `upstream_timeout` 504, and `internal_error` 500. Envelopes contain `category`, `message`, `correlationId`, and optional `retryAfter` seconds.
 - **C01-D4 — Health and schema:** Both health endpoints return `{"status":"ok"}` without contacting an upstream. FastAPI-generated OpenAPI explicitly includes canonical schemas that are not yet used by non-health routes.
 
 # M1-C03 Observability Contracts
@@ -45,3 +45,9 @@
 
 - **C02-D1 — Single-range behavior:** Closed, open-ended, and suffix byte ranges are accepted. Multi-range headers are treated as no Range per G2; malformed or unsatisfiable ranges produce 416 when the object size is known, with `Content-Range: bytes */<size>`. If size is unknown, the upstream response semantics are retained.
 - **C02-D2 — Downstream response headers:** Only `Content-Type`, `Content-Length`, `Content-Range`, `Accept-Ranges`, `ETag`, `Last-Modified`, and `Cache-Control` are eligible for forwarding. Header names are normalized; malformed values are omitted; a 200 response that ignored Range must not retain `Content-Range`. If upstream omits `Cache-Control`, the downstream default is `no-store`.
+
+# M3-C05 Stream Limits & Metrics Contracts
+
+- **C05-D1 — Per-client stream slots:** Enforce `MAX_ACTIVE_STREAMS_PER_IP` in the relay API before source resolution or upstream opening. Its initial configurable default is 3 pending load-based tuning in M6-C03. A slot remains held until the downstream response completes or is cancelled, and local cap failures use `local_rate_limited` with HTTP 429 and `Retry-After: 1`.
+- **C05-D2 — Proxy trust:** Use `X-Forwarded-For` only when the immediate peer matches `TRUSTED_PROXY_IPS`; walk the chain from the trusted peer and select the nearest untrusted address. Invalid chains fall back to the socket peer.
+- **C05-D3 — Relay metric updates:** Increment request and upstream-error counters at route/open and body-failure boundaries; count yielded body bytes, observe time to first nonempty body chunk, and maintain the active-connection gauge with acquired stream slots. Metrics remain process-local and unlabeled.

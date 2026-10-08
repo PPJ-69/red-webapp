@@ -7,7 +7,7 @@ export type Creator = {
   profileImageUrl?: string | null;
 };
 
-export type ErrorCategory = "invalid_request" | "invalid_media_id" | "unauthorized" | "forbidden" | "not_found" | "rate_limited" | "upstream_authentication_failed" | "provider_unavailable" | "provider_error" | "upstream_timeout" | "range_not_satisfiable" | "connection_interrupted" | "unsupported_media" | "internal_error";
+export type ErrorCategory = "invalid_request" | "invalid_media_id" | "unauthorized" | "forbidden" | "not_found" | "rate_limited" | "local_rate_limited" | "upstream_authentication_failed" | "provider_unavailable" | "provider_error" | "upstream_timeout" | "range_not_satisfiable" | "connection_interrupted" | "unsupported_media" | "internal_error";
 
 export type ErrorEnvelope = {
   category: ErrorCategory;

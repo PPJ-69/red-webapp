@@ -9,6 +9,7 @@ const categories = [
   "forbidden",
   "not_found",
   "rate_limited",
+  "local_rate_limited",
   "upstream_authentication_failed",
   "provider_unavailable",
   "provider_error",
@@ -27,16 +28,26 @@ describe("API errors", () => {
           category,
           message: "Request failed.",
           correlationId: "request-1",
-          retryAfter: category === "rate_limited" ? 30 : undefined,
+          retryAfter:
+            category === "rate_limited" || category === "local_rate_limited"
+              ? 30
+              : undefined,
         }),
-        { status: category === "rate_limited" ? 429 : 400 },
+        {
+          status:
+            category === "rate_limited" || category === "local_rate_limited"
+              ? 429
+              : 400,
+        },
       ),
     );
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.category).toBe(category);
     expect(error.correlationId).toBe("request-1");
-    if (category === "rate_limited") expect(error.retryAfter).toBe(30);
+    if (category === "rate_limited" || category === "local_rate_limited") {
+      expect(error.retryAfter).toBe(30);
+    }
   });
 
   it("maps invalid JSON and malformed envelopes", async () => {

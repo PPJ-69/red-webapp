@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from backend.app.api.stream import router as stream_router
+from backend.app.config import AppEnvironment, Settings
 from backend.app.domain.enums import ErrorCategory
 from backend.app.domain.errors import ApplicationError, register_exception_handlers
 from backend.app.domain.models import (
@@ -18,6 +19,7 @@ from backend.app.domain.models import (
 )
 from backend.app.dependencies import get_stream_service
 from backend.app.observability.logging import install_request_context
+from backend.app.observability.metrics import MetricsRegistry
 from backend.app.services.media_resolver import MediaResolver
 from backend.app.services.stream_service import StreamService
 from backend.app.upstream.stream_transport import StreamTransport
@@ -86,6 +88,8 @@ class _TargetResolver:
 
 def _test_app(service: StreamService) -> FastAPI:
     app = FastAPI()
+    app.state.settings = Settings(AppEnvironment.TEST)
+    app.state.metrics = MetricsRegistry()
     app.include_router(stream_router)
     register_exception_handlers(app)
     install_request_context(app)

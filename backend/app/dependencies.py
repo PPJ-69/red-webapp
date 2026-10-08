@@ -1,6 +1,8 @@
 from fastapi import Request
 
 from .config import Settings
+from .observability.metrics import metrics
+from .security.limits import StreamLimiter
 from .services.media_resolver import MediaResolver
 from .services.stream_service import StreamService
 from .upstream.provider import UpstreamMediaProvider
@@ -42,3 +44,15 @@ def get_stream_service(request: Request) -> StreamService:
     service = StreamService(resolver, transport)
     request.app.state.stream_service = service
     return service
+
+
+def get_stream_limiter(request: Request) -> StreamLimiter:
+    limiter = getattr(request.app.state, "stream_limiter", None)
+    if limiter is not None:
+        return limiter
+
+    settings = getattr(request.app.state, "settings", None) or get_settings()
+    registry = getattr(request.app.state, "metrics", metrics)
+    limiter = StreamLimiter(settings.max_active_streams_per_ip, registry)
+    request.app.state.stream_limiter = limiter
+    return limiter

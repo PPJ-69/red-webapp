@@ -8,6 +8,7 @@ class ErrorCategory(str, Enum):
     FORBIDDEN = "forbidden"
     NOT_FOUND = "not_found"
     RATE_LIMITED = "rate_limited"
+    LOCAL_RATE_LIMITED = "local_rate_limited"
     UPSTREAM_AUTHENTICATION_FAILED = "upstream_authentication_failed"
     PROVIDER_UNAVAILABLE = "provider_unavailable"
     PROVIDER_ERROR = "provider_error"

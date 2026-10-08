@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **13 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **14 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M3: Streaming Relay (POC Gate)**
 
 ## Current Chunk
-**M3-C05: Stream concurrency limits and relay metrics**
+**M3-C06: Streaming POC page and gate verification**
 - Status: pending.
-- Depends on: M3-C04, M1-C03.
-- Handoff: implement per-IP stream caps and relay metric updates; do not add those limits to the relay transport itself.
+- Depends on: M3-C04, M3-C05, M2-C05, M1-C04, M1-C05.
+- Handoff: build only the development POC page and prove browser play/pause/seek/retry/next and bounded relay memory; keep the page out of production builds.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -33,12 +33,13 @@
 - **M3-C02:** Pure Range parsing and downstream response semantics complete. Added named tests for closed/open/suffix ranges, malformed and multi-range handling, upstream 200/206/416 behavior, safe response headers, and unknown/known object sizes.
 - **M3-C03:** Added a loopback-only Range-capable fake CDN, a 272-byte AVI fixture, bounded synthetic responses, status/latency/disconnect/auth/signature/header/range faults, connection counters, a shared test context manager, and fake-provider CDN targeting.
 - **M3-C04:** Added the ID-based range relay, bounded async HTTP transport, timeout/error handling, close-on-cancel behavior, source-resolution caching/invalidation, quality-preserving relay descriptors, and connect-time pinning to validated public IPs. The relay allowlist is strictly fail-closed when blank.
+- **M3-C05:** Added per-IP active-stream caps before source resolution, trusted-proxy-aware client IP derivation, local 429 error envelopes, slot release on completion/failure/cancellation, and request/bytes/first-byte/active/upstream-error metrics. Updated frontend error typing and mapping for `local_rate_limited`.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
-- **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits (current) · C06 POC page + gate
+- **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate (current)
 - **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
@@ -74,6 +75,7 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M3-C02:** 17 focused range-semantics tests pass. The pure module performs no network I/O or endpoint wiring.
 - **M3-C03:** 13 focused fake-CDN/provider tests pass; the full backend suite passes (104 tests). Fault coverage includes all injected statuses and non-status behaviors, byte ranges, synthetic streaming, and client disconnect counter cleanup.
 - **M3-C04:** Full backend suite passes (134 tests). Relay integration covers full/ranged/repeated-seek/416, upstream errors and redirects, signature refresh, auth-header isolation, large-stream cancellation (including before iteration), total/idle timeouts, DNS pinning, target rejection, quality propagation, and the no-full-buffer guard.
+- **M3-C05:** Full backend suite passes (144 tests); focused concurrency, trusted-proxy, slot-cleanup, configuration, and metric assertions pass. Frontend type-check, error-mapping unit test, and schema-drift check are run for the added error category.
 - Highest-priority tests:
   - M3-C06 POC gate (play/pause/seek/retry/next; zero media files; flat relay memory; upstream closes on cancel).
   - M6-C05 full no-download scenario (**release-blocking**).
@@ -89,7 +91,6 @@ O5 is resolved; other gates remain open and use their listed defaults until reso
 | O3 / O4 | Direct-vs-relay privacy trade-off; HLS in v1 | M2-C05, M3-C04 | Conservative classifier (relay default); MP4 only |
 | O1 / O10 | Backend sessions in v1? Privacy Mode behavior | M5-C04, M5-C08 | Frontend-only; Privacy Mode locked ON (see Known Issue 2) |
 | O12 | Browser support matrix | M4-C02 E2E | Latest evergreen desktop + mobile |
-| G1 | Local rate-limit error category | M3-C05 | Add `LOCAL_RATE_LIMITED` |
 | G2 | Multi-range `Range` header | M3-C02 | Treat as no Range |
 | G3 | Definition of "seen" | M5-C05 | Mark when playback begins |
 | G4 | Reporting path for `browser_player_errors` | M6-C02 | Not implemented |
@@ -100,7 +101,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M3-C04: media-ID relay endpoint with a validated quality selector, safe Range forwarding, bounded streaming, and upstream cleanup on disconnect.
-- **Next:** Implement M3-C05 stream concurrency limits and relay metrics; the relay currently has no concurrency cap.
+- **Done:** Completed M3-C05: per-IP stream caps, trusted proxy parsing, complete slot cleanup, and relay metrics. Added `local_rate_limited` to the backend and frontend error contracts.
+- **Next:** Implement M3-C06 streaming POC page and gate verification; keep the page development-only and report the measured gate results.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
