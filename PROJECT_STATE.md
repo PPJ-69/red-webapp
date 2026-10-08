@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **15 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **16 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M4: Player**
 
 ## Current Chunk
-**M4-C01: Player state machine**
+**M4-C02: MediaPlayer component, source lifecycle, E2E rig**
 - Status: pending.
-- Depends on: M1-C04.
-- Handoff: implement the pure player state machine and event transition tests only; M3-C06 fake-upstream playback gate passed, while live-provider smoke remains blocked by O6.
+- Depends on: M4-C01, M3-C06.
+- Handoff: implement only the MediaPlayer component and source lifecycle/E2E rig. Keep M3-C06 live-provider smoke gated on O6; no full app integration before the gate is cleared.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -35,13 +35,14 @@
 - **M3-C04:** Added the ID-based range relay, bounded async HTTP transport, timeout/error handling, close-on-cancel behavior, source-resolution caching/invalidation, quality-preserving relay descriptors, and connect-time pinning to validated public IPs. The relay allowlist is strictly fail-closed when blank.
 - **M3-C05:** Added per-IP active-stream caps before source resolution, trusted-proxy-aware client IP derivation, local 429 error envelopes, slot release on completion/failure/cancellation, and request/bytes/first-byte/active/upstream-error metrics. Updated frontend error typing and mapping for `local_rate_limited`.
 - **M3-C06:** Added the development-only native-video page, test-only loopback CDN API, browser E2E for play/pause/seeking/failure retry/item switching, runtime browser/filesystem compliance assertions, and a 128 MiB concurrent/cancelled relay RSS test. The page is excluded from production output.
+- **M4-C01:** Added typed player states/events, strict transition validation, native-media-event mapping, an in-memory Svelte-compatible player store, restoration of play/pause intent across seeking and buffering, and RETRY/SKIP/NEXT/LOOP actions.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
-- **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
+- **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig (current) · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
@@ -78,6 +79,7 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M3-C04:** Full backend suite passes (134 tests). Relay integration covers full/ranged/repeated-seek/416, upstream errors and redirects, signature refresh, auth-header isolation, large-stream cancellation (including before iteration), total/idle timeouts, DNS pinning, target rejection, quality propagation, and the no-full-buffer guard.
 - **M3-C05:** Full backend suite passes (144 tests); focused concurrency, trusted-proxy, slot-cleanup, configuration, and metric assertions pass. Frontend type-check, error-mapping unit test, and schema-drift check pass for the added error category.
 - **M3-C06:** Browser E2E passes using the generated in-memory WebM fixture; verifies play, pause, forward/backward seek, injected upstream failure and retry, next item, zero browser-storage/filesystem violations, and closed relay/CDN connections. Full backend suite passes (145 tests). The 128 MiB synthetic relay peaks at 1.9 MiB RSS growth against a 48 MiB limit while three concurrent streams are cancelled. Production build omits `poc.html`; live smoke remains blocked by O6.
+- **M4-C01:** All 70 frontend unit tests pass, including valid/invalid state-event combinations, startup/seek/stall/end/error sequences, play/pause restoration, loop/retry/skip/next actions, subscriber updates, and a static no-clock/no-polling guard. Svelte type-check passes.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved (before M4-C02/full UI).
   - M6-C05 full no-download scenario (**release-blocking**).
@@ -103,7 +105,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M3-C06: browser-native relay playback and interactions pass against the loopback fake CDN; runtime compliance checks are clean; large-object RSS and cancellation cleanup pass. The test page and API remain outside production.
-- **Next:** M4-C01 pure player state machine and event transitions; do not start M4-C02/full UI until the POC gate's O6-approved live smoke is recorded.
+- **Done:** Completed M4-C01: pure player state machine and Svelte-compatible store, with native event mapping and explicit illegal-transition errors. Time, duration, and buffering measurements remain owned by the browser media element.
+- **Next:** M4-C02 MediaPlayer/source lifecycle and E2E rig, gated on recording the approved live smoke after O6 is cleared; avoid full application integration.
 - **Watch:** Live provider smoke remains blocked by O6; direct-vs-relay product observation remains open under O3. Known Issues 1 and 2 before M5.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
