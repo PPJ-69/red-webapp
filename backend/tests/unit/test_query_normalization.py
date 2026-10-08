@@ -1,10 +1,35 @@
 import unittest
+import json
+from pathlib import Path
 
 from backend.app.domain.models import SearchQuery
 from backend.app.services.query_normalization import normalize_search_query, parse_search_tokens
 
 
+ROOT = Path(__file__).resolve().parents[3]
+
+
 class QueryNormalizationTests(unittest.TestCase):
+    def test_shared_query_vectors_match_backend_normalization(self) -> None:
+        vectors = json.loads(
+            (ROOT / "shared" / "fixtures" / "query_vectors.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for vector in vectors:
+            with self.subTest(vector=vector["name"]):
+                normalized = normalize_search_query(**vector["input"])
+                self.assertEqual(
+                    {
+                        "query": normalized.query,
+                        "tags": normalized.tags,
+                        "mode": normalized.mode,
+                        "page": normalized.page,
+                        "limit": normalized.limit,
+                    },
+                    vector["expected"],
+                )
+
     def test_parse_search_tokens_handles_creator_and_tags(self) -> None:
         query_text, tags, creators = parse_search_tokens("cats #funny @alice user:sample creator:team")
 

@@ -73,3 +73,8 @@
 - **C05-D1 — Queue navigation:** The queue is array-backed and RAM-only. Random navigation prefers unseen items, excludes the current item when alternatives exist, and falls back to any other item when all alternatives have been seen.
 - **C05-D2 — Bounded prefetch:** Metadata stays with queue entries. The current item's source is resolved by the player; only the immediate next item's source descriptor may be resolved ahead and reused once. No non-current media stream is requested, and prepared descriptors for items no longer current/next are discarded.
 - **C05-D3 — End and close behavior:** Native looping remains controlled by the video element. Ended playback advances only when autoplay is enabled and a next item exists; otherwise the player remains ended. Closing reports the current scroll position and returns focus to the opener.
+
+# M5-C01 Search Context Contracts
+
+- **C01-D1 — Query parity:** The frontend parser follows the backend token normalization contract; shared JSON vectors are exercised by both frontend and backend tests. Creator tokens embedded in query text are normalized into `q`; an explicit creator filter uses the existing `creator` parameter, while tags remain repeated `tags` parameters.
+- **C01-D2 — Search lifecycle:** Search metadata and item maps are held in RAM only. A new query aborts and supersedes the previous request; page requests are sequential and deduplicate items by ID. Failed or superseded requests do not replace already loaded items.

@@ -1,0 +1,83 @@
+[
+  {
+    "name": "empty query defaults to trending",
+    "input": {},
+    "expected": {
+      "query": null,
+      "tags": [],
+      "mode": "trending",
+      "page": 1,
+      "limit": 20
+    }
+  },
+  {
+    "name": "whitespace query remains search mode",
+    "input": {
+      "query": "   "
+    },
+    "expected": {
+      "query": null,
+      "tags": [],
+      "mode": "search",
+      "page": 1,
+      "limit": 20
+    }
+  },
+  {
+    "name": "extracts text creator and tag tokens",
+    "input": {
+      "query": "cats #funny @alice user:sample creator:team"
+    },
+    "expected": {
+      "query": "cats @alice @sample @team",
+      "tags": ["funny"],
+      "mode": "search",
+      "page": 1,
+      "limit": 20
+    }
+  },
+  {
+    "name": "splits commas and deduplicates exact tokens",
+    "input": {
+      "query": "@Alice, dogs #funny, #funny #Funny",
+      "tags": ["meme", "#funny", "meme"]
+    },
+    "expected": {
+      "query": "dogs @Alice",
+      "tags": ["funny", "Funny", "meme"],
+      "mode": "search",
+      "page": 1,
+      "limit": 20
+    }
+  },
+  {
+    "name": "cleans punctuation and explicit creator",
+    "input": {
+      "query": "\"soft cats\"; # cute ",
+      "creator": "@alice"
+    },
+    "expected": {
+      "query": "soft cats cute @alice",
+      "tags": [],
+      "mode": "search",
+      "page": 1,
+      "limit": 20
+    }
+  },
+  {
+    "name": "preserves provided mode and clamps page size",
+    "input": {
+      "query": "#funny",
+      "mode": "trending",
+      "page": 0,
+      "limit": 500
+    },
+    "expected": {
+      "query": null,
+      "tags": ["funny"],
+      "mode": "trending",
+      "page": 1,
+      "limit": 100
+    }
+  }
+]
