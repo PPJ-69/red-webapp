@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **16 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **17 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M4: Player**
 
 ## Current Chunk
-**M4-C02: MediaPlayer component, source lifecycle, E2E rig**
+**M4-C03: Failure recovery and error UX**
 - Status: pending.
-- Depends on: M4-C01, M3-C06.
-- Handoff: implement only the MediaPlayer component and source lifecycle/E2E rig. Keep M3-C06 live-provider smoke gated on O6; no full app integration before the gate is cleared.
+- Depends on: M4-C02.
+- Handoff: implement only the recovery decision table and item-level error UX. Keep live-provider use gated on O6; the fake-provider tests do not require live access.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -36,17 +36,18 @@
 - **M3-C05:** Added per-IP active-stream caps before source resolution, trusted-proxy-aware client IP derivation, local 429 error envelopes, slot release on completion/failure/cancellation, and request/bytes/first-byte/active/upstream-error metrics. Updated frontend error typing and mapping for `local_rate_limited`.
 - **M3-C06:** Added the development-only native-video page, test-only loopback CDN API, browser E2E for play/pause/seeking/failure retry/item switching, runtime browser/filesystem compliance assertions, and a 128 MiB concurrent/cancelled relay RSS test. The page is excluded from production output.
 - **M4-C01:** Added typed player states/events, strict transition validation, native-media-event mapping, an in-memory Svelte-compatible player store, restoration of play/pause intent across seeking and buffering, and RETRY/SKIP/NEXT/LOOP actions.
+- **M4-C02:** Added typed source resolution with safe playback URL validation, cancellable native MediaPlayer source lifecycle, loading/buffering overlays, the temporary player shell, and Chromium E2E using the fake provider/CDN. The client binds browser `fetch` correctly; stale `emptied` events during item switches no longer reset the new source.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
-- **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig (current) · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
+- **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery (current) · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
-Hard gates: **M3-C06** must pass before any M4-C02 or full UI work. **M6-C05** blocks release.
+Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
 
 ## Important Architecture Decisions
 - **Stream, don't store.** No DB, media or thumbnail cache, or persisted app state. RAM-only, TTL-bound.
@@ -80,8 +81,9 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M3-C05:** Full backend suite passes (144 tests); focused concurrency, trusted-proxy, slot-cleanup, configuration, and metric assertions pass. Frontend type-check, error-mapping unit test, and schema-drift check pass for the added error category.
 - **M3-C06:** Browser E2E passes using the generated in-memory WebM fixture; verifies play, pause, forward/backward seek, injected upstream failure and retry, next item, zero browser-storage/filesystem violations, and closed relay/CDN connections. Full backend suite passes (145 tests). The 128 MiB synthetic relay peaks at 1.9 MiB RSS growth against a 48 MiB limit while three concurrent streams are cancelled. Production build omits `poc.html`; live smoke remains blocked by O6.
 - **M4-C01:** All 70 frontend unit tests pass, including valid/invalid state-event combinations, startup/seek/stall/end/error sequences, play/pause restoration, loop/retry/skip/next actions, subscriber updates, and a static no-clock/no-polling guard. Svelte type-check passes.
+- **M4-C02:** All 78 frontend unit tests pass, including source URL validation, ID encoding, quality propagation, and abort-signal forwarding. Svelte type-check and production build pass. Chromium E2E passes for metadata load, native play, buffering/canplay transitions, item switching, and upstream connection cleanup using only the fake provider/CDN.
 - Outstanding gates:
-  - M3-C06 approved live-provider smoke after O6 is resolved (before M4-C02/full UI).
+  - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
 - Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (from M4-C02), schema-drift check, storage-API lint.
 
@@ -105,7 +107,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M4-C01: pure player state machine and Svelte-compatible store, with native event mapping and explicit illegal-transition errors. Time, duration, and buffering measurements remain owned by the browser media element.
-- **Next:** M4-C02 MediaPlayer/source lifecycle and E2E rig, gated on recording the approved live smoke after O6 is cleared; avoid full application integration.
-- **Watch:** Live provider smoke remains blocked by O6; direct-vs-relay product observation remains open under O3. Known Issues 1 and 2 before M5.
+- **Done:** Completed M4-C02: native MediaPlayer, cancellable source resolution/cleanup, loading and buffering overlays, temporary player mount, and fake-provider/CDN Chromium E2E. Time, duration, and buffering measurements remain owned by the browser media element.
+- **Next:** M4-C03 failure recovery and error UX. Do not add controls or queue behavior from later chunks.
+- **Watch:** Live-provider smoke remains blocked by O6; M4-C02 validation used no live upstream. Direct-vs-relay product observation remains open under O3. Known Issues 1 and 2 before M5.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

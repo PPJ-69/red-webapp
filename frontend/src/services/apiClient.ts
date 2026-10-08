@@ -10,7 +10,7 @@ export class ApiClient {
 
   constructor(options: { baseUrl?: string; fetcher?: typeof fetch } = {}) {
     this.baseUrl = (options.baseUrl ?? "").replace(/\/+$/, "");
-    this.fetcher = options.fetcher ?? fetch;
+    this.fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
   }
 
   async get<T>(path: string, options: RequestOptions = {}): Promise<T> {

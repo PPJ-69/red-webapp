@@ -12,6 +12,7 @@ export const PLAYER_STATES = [
 
 export type PlayerState = (typeof PLAYER_STATES)[number];
 export type PlaybackState = "PLAYING" | "PAUSED";
+export type Quality = "auto" | "hd" | "sd";
 
 export type PlayerEvent =
   | { type: "OPEN" }

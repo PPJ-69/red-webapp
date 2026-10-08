@@ -64,6 +64,7 @@ jobs:
       - name: Verify browser storage monitor
         run: |
           python -m playwright install --with-deps chromium
+          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.player_basic_spec -v
           python -B tools/compliance/browser_storage_check/check_browser_storage.py --self-check
           python -B -m unittest discover -s tests/compliance -t . -v
 
