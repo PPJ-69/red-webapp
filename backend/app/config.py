@@ -16,6 +16,7 @@ class ConfigurationError(ValueError):
 @dataclass(frozen=True)
 class Settings:
     app_env: AppEnvironment
+    upstream_allowed_hosts: tuple[str, ...] = ()
 
     @classmethod
     def from_environment(
@@ -38,4 +39,14 @@ class Settings:
                 f"APP_ENV must be one of: {allowed}."
             ) from exc
 
-        return cls(app_env=app_env)
+        raw_hosts = environ.get("UPSTREAM_ALLOWED_HOSTS", "")
+        upstream_allowed_hosts = tuple(
+            host.strip().lower()
+            for host in raw_hosts.split(",")
+            if host.strip()
+        )
+
+        return cls(
+            app_env=app_env,
+            upstream_allowed_hosts=upstream_allowed_hosts,
+        )

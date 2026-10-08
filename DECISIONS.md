@@ -28,3 +28,14 @@
 - **C02-D1 — Canonical mapping boundary:** The RedGIFs adapter converts upstream JSON to canonical backend models only; raw upstream fields such as provider-specific payload keys, signed URLs, or auth headers are never exposed to application code or browser responses.
 - **C02-D2 — Recorded provider contract:** The adapter must satisfy the reusable `ProviderContract` for authentication, media lookup, creator lookup, search, tag suggestions, and source resolution using fixture-backed payloads, so the live dependency remains isolated until O6 is cleared.
 - **C02-D3 — Tolerant normalization:** Missing optional metadata is dropped to null/empty values, and malformed records are skipped rather than crashing the whole result set; the adapter raises provider-level application errors only for actual upstream faults or unsupported responses.
+
+# M3-C01 Relay Security Contracts
+
+- **C01-D1 — Fail-closed upstream validation:** Relay targets must be HTTPS, host allowlisted via `UPSTREAM_ALLOWED_HOSTS`, and resolve only to public, non-private addresses. Localhost, loopback, private, link-local, multicast, unspecified, and reserved IPs are rejected before any fetch occurs.
+- **C01-D2 — Redirect handling:** Redirects are not followed by default for upstream relay targets; future stream code must explicitly opt into redirect handling only when the target remains allowlisted and safe.
+- **C01-D3 — Configured allowlist:** The setting defaults to an empty list, so an unset or blank allowlist fails closed rather than allowing untrusted upstream hosts.
+
+# M3-C02 Range Semantics Contracts
+
+- **C02-D1 — Single-range behavior:** Closed, open-ended, and suffix byte ranges are accepted. Multi-range headers are treated as no Range per G2; malformed or unsatisfiable ranges produce 416 when the object size is known, with `Content-Range: bytes */<size>`. If size is unknown, the upstream response semantics are retained.
+- **C02-D2 — Downstream response headers:** Only `Content-Type`, `Content-Length`, `Content-Range`, `Accept-Ranges`, `ETag`, `Last-Modified`, and `Cache-Control` are eligible for forwarding. Header names are normalized; malformed values are omitted; a 200 response that ignored Range must not retain `Content-Range`. If upstream omits `Cache-Control`, the downstream default is `no-store`.
