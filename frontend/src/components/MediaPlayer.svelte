@@ -27,6 +27,7 @@
     PlayerState,
     Quality,
   } from "../types/player";
+  import type { MediaSource } from "../types/api";
   import { sourceService } from "../services/sourceService";
 
   export let itemId: string;
@@ -37,6 +38,9 @@
   export let speed = 1;
   export let quality: Quality = "auto";
   export let openUrl: string | undefined = undefined;
+  export let hasNext = false;
+  export let takePrefetchedSource: (id: string) => MediaSource | undefined = () =>
+    undefined;
 
   const dispatch = createEventDispatcher<{
     playerEvent: { event: PlayerEvent; state: PlayerState };
@@ -119,6 +123,11 @@
       event: playerEvent,
       state: playerStore.getSnapshot().state,
     });
+    if (eventName === "ended" && !loop) {
+      if (autoplay && hasNext) {
+        dispatch("next", undefined);
+      }
+    }
   }
 
   async function resolveAndLoad(
@@ -146,11 +155,16 @@
     }
 
     try {
-      const source = await sourceService.resolve(
-        requestedItemId,
-        requestedQuality,
-        controller.signal,
-      );
+      const preparedSource = isManualRetry
+        ? undefined
+        : takePrefetchedSource(requestedItemId);
+      const source =
+        preparedSource ??
+        (await sourceService.resolve(
+          requestedItemId,
+          requestedQuality,
+          controller.signal,
+        ));
       if (requestId !== activeRequest || controller.signal.aborted) return;
       apply({ type: "SOURCE_RESOLVED" });
       video.src = source.playbackUrl;

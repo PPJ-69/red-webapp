@@ -238,7 +238,10 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                 expect(page.get_by_test_id("skip")).to_be_visible()
                 expect(page.get_by_test_id("open")).to_have_count(0)
                 page.get_by_test_id("skip").click()
-                expect(page.get_by_test_id("player-state")).to_have_text("IDLE")
+                expect(page.get_by_test_id("player-overlay")).to_contain_text(
+                    "Second sample"
+                )
+                expect(page.get_by_test_id("player-state")).to_have_text("PAUSED")
                 expect(page.get_by_test_id("player-error")).to_have_count(0)
             finally:
                 browser.close()

@@ -65,5 +65,11 @@
 
 # M4-C04 Player Controls Contracts
 
-- **C04-D1 — Keyboard map:** Space toggles play/pause; Left/Right seek by 5 seconds; Up/Down adjust volume by 0.05; M toggles mute; L toggles loop; F toggles fullscreen; ? opens shortcut help; N/P/R/V/Escape emit next/previous/retry/favorite/close intents. F is fullscreen and V is favorite. These intents do not implement queue or favorite behavior.
+- **C04-D1 — Keyboard map:** Space toggles play/pause; Left/Right seek by 5 seconds; Up/Down adjust volume by 0.05; M toggles mute; L toggles loop; F toggles fullscreen; ? opens shortcut help; N/P/R/V/Escape emit next/previous/retry/favorite/close intents. F is fullscreen and V is favorite. M4-C05 wires next/previous to the queue; favorite remains intent-only.
 - **C04-D2 — Focus and playback authority:** Player shortcuts do not override text-entry or interactive control targets, except Escape remains available to close. The native video element remains authoritative for playback and the controls act on its media properties/events.
+
+# M4-C05 Queue and Prefetch Contracts
+
+- **C05-D1 — Queue navigation:** The queue is array-backed and RAM-only. Random navigation prefers unseen items, excludes the current item when alternatives exist, and falls back to any other item when all alternatives have been seen.
+- **C05-D2 — Bounded prefetch:** Metadata stays with queue entries. The current item's source is resolved by the player; only the immediate next item's source descriptor may be resolved ahead and reused once. No non-current media stream is requested, and prepared descriptors for items no longer current/next are discarded.
+- **C05-D3 — End and close behavior:** Native looping remains controlled by the video element. Ended playback advances only when autoplay is enabled and a next item exists; otherwise the player remains ended. Closing reports the current scroll position and returns focus to the opener.

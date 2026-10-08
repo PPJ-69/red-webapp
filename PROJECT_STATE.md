@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **21 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **22 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
-**M4: Player**
+**M5: Discovery UI & Session Features**
 
 ## Current Chunk
-**M4-C05: PlayerOverlay and queue-based navigation with prefetch policy**
+**M5-C01: Query parser and search-context store**
 - Status: pending.
-- Depends on: M4-C02, M4-C04.
-- Handoff: implement only player overlay, queue navigation, and bounded prefetch policy; keep favorite persistence outside this chunk.
+- Depends on: M1-C04, M2-C03.
+- Handoff: implement only query parsing and the in-memory search context; do not add search UI or autocomplete.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -45,8 +45,8 @@
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
-- **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch (current)
-- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
+- **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
+- **M5 Discovery & Session:** C01 query parser/search store (current) · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
 Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
@@ -86,10 +86,11 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M4-C02:** All 78 frontend unit tests pass, including source URL validation, ID encoding, quality propagation, and abort-signal forwarding. Svelte type-check and production build pass. Chromium E2E passes for metadata load, native play, buffering/canplay transitions, item switching, and upstream connection cleanup using only the fake provider/CDN.
 - **M4-C03:** All 91 frontend unit tests pass, including recovery decisions, bounded auth/quality retries, relay-only error diagnosis, and timing messages. Svelte type-check and production build pass. Five Chromium E2E cases pass for source re-resolution, fake-CDN expired-signature recovery, 404 unavailable/no-retry, 429 timing/manual retry, and skip behavior. Full backend suite passes (145 tests).
 - **M4-C04:** All 118 frontend unit tests pass, including the selected keyboard map, modifier/repeat handling, and typing-focus suppression including contenteditable variants. Svelte type-check, production build, storage policy check, and Chromium E2E pass for mute, volume, speed, loop, fullscreen, keyboard seek, shortcut-help dialog, and accessible control names. Existing lifecycle and recovery browser suites also pass.
+- **M4-C05:** Added an array-backed in-memory queue with previous/next/random, seen-aware selection and change notifications; a player overlay with navigation/close; and one-item source-descriptor prefetch that never requests non-current media bytes. Skip and keyboard navigation now use the queue; ended behavior honors loop/autoplay/queue bounds, and close restores scroll position and opener focus. All 127 frontend unit tests pass; type-check, build, storage policy check, and all seven fake-provider lifecycle/recovery/controls/navigation Chromium tests pass.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
-- Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls), schema-drift check, storage-API lint.
+- Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls, navigation), schema-drift check, storage-API lint.
 
 ## Open Decisions
 O5 is resolved; other gates remain open and use their listed defaults until resolved.
@@ -111,7 +112,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M4-C04: accessible native controls, keyboard shortcuts/help, and control intent events. The selected key map is recorded in DECISIONS.md; fullscreen retains the controls by targeting the player section.
-- **Next:** M4-C05 player overlay, queue navigation, and prefetch policy. Keep favorite/next/previous behavior within its approved scope and do not pull in M5 persistence.
-- **Watch:** Live-provider smoke remains blocked by O6; all player E2E uses fake sources/CDN. M4-C04 emits navigation/favorite intents only; queue and favorite behavior remain unwired until their planned chunks. Known Issues 1 and 2 remain before M5.
+- **Done:** Completed M4-C05: added queue navigation, seen-aware random selection, bounded source-descriptor prefetch, ended/autoplay handling, skip-to-next, and close focus/scroll restoration.
+- **Next:** M5-C01 query parsing and search-context store. Keep UI/autocomplete out of scope; preserve RAM-only metadata and do not connect the player to results before M5-C06.
+- **Watch:** Live-provider use remains gated by O6. Current sample queue and its metadata are temporary POC wiring; M5-C06 replaces it with results-backed queue integration. Backend sessions remain conditional pending O1/O10; Known Issues 1 and 2 still need resolution before later M5 work.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
