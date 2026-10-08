@@ -17,8 +17,11 @@ class MediaSourceApiIntegrationTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(payload["playbackUrl"], "https://cdn.example.invalid/media/sample-media-auto.mp4")
+        self.assertEqual(
+            payload["playbackUrl"], "/api/stream/sample-media?quality=auto"
+        )
         self.assertEqual(payload["kind"], "relay")
+        self.assertNotIn("cdn.example.invalid", response.text)
         self.assertIn("requiresRelay", payload)
         self.assertIn("expiresAt", payload)
 

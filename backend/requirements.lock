@@ -1,4 +1,4 @@
-# pyproject-sha256: dcb204454905b6c08157eea08e54a629c700ad501a7e11e9a1ffef1a75354f20
+# pyproject-sha256: decff868ddf6916ed7a00dae4e6175c4e03b68f189440292ac03788c9830b20b
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1

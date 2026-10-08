@@ -255,10 +255,10 @@ The architecture's 7 milestones are consolidated to 6 by merging Hardening and R
 - **Milestone:** M3
 - **Purpose:** Deliver the bounded, ID-only, Range-capable relay (§14–16). This is the highest-risk chunk.
 - **Files to create:** `services/stream_service.py`, `api/stream.py`, `upstream/stream_transport.py` (+, separate from `transport.py`), `backend/tests/integration/test_stream_relay.py`, `backend/tests/unit/test_no_full_buffering_guard.py`
-- **Files to modify:** `main.py` (router registration)
+- **Files to modify:** `main.py` (router registration/lifecycle), `api/media.py`, `dependencies.py`, `services/media_resolver.py`, `services/source_cache.py`, `security/validation.py`, backend dependency manifest and lock
 - **Dependencies:** M3-C01, M3-C02, M3-C03, M1-C02 (resolver interface)
 - **Interfaces/API contracts introduced:**
-  - `GET /api/stream/{id}`: ID-only, no URL parameters.
+  - `GET /api/stream/{id}`: media ID path plus a validated `quality=auto|hd|sd` selector only; no upstream URL parameter is accepted.
   - Flow: resolve → validate target → forward Range upstream → forward fixed-size chunks.
   - Separate connect/header/idle/total timeouts.
   - Upstream abort on downstream disconnect.

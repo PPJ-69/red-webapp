@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from backend.app.dependencies import get_upstream_provider
+from backend.app.dependencies import get_media_resolver
 from backend.app.domain.models import MediaSource
 from backend.app.services.media_resolver import MediaResolver
-from backend.app.upstream.provider import UpstreamMediaProvider
 
 router = APIRouter(tags=["media"])
 
@@ -14,7 +13,6 @@ router = APIRouter(tags=["media"])
 async def resolve_media_source(
     media_id: str,
     quality: str = Query(default="auto", pattern=r"^(auto|hd|sd)$"),
-    provider: UpstreamMediaProvider = Depends(get_upstream_provider),
+    resolver: MediaResolver = Depends(get_media_resolver),
 ) -> MediaSource:
-    resolver = MediaResolver(provider)
     return await resolver.resolve(media_id, quality)

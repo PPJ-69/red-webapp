@@ -22,6 +22,7 @@ class FakeCDNFault(str, Enum):
     NOT_FOUND = "404"
     RATE_LIMITED = "429"
     SERVER_ERROR = "500"
+    REDIRECT = "redirect"
     EXPIRED_SIGNATURE = "expired_signature"
     REQUIRED_AUTH_HEADER = "required_auth_header"
     MISSING_CONTENT_LENGTH = "missing_content_length"
@@ -115,6 +116,12 @@ class _FakeCDNHandler(BaseHTTPRequestHandler):
             return
 
         fault = self.fake_server.get_fault()
+        if fault is FakeCDNFault.REDIRECT:
+            self.send_response(302)
+            self.send_header("Location", "/media/redirect-target.avi")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         if fault in _STATUS_FAULTS:
             status, message = _STATUS_FAULTS[fault]
             self._send_error(status, message)

@@ -24,5 +24,8 @@ class SourceCache(Generic[T]):
     def set(self, key: tuple[str, str], value: T) -> None:
         self._entries[key] = (time.monotonic() + self.ttl_seconds, value)
 
+    def delete(self, key: tuple[str, str]) -> None:
+        self._entries.pop(key, None)
+
     def clear(self) -> None:
         self._entries.clear()

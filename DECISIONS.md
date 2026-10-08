@@ -35,6 +35,12 @@
 - **C01-D2 — Redirect handling:** Redirects are not followed by default for upstream relay targets; future stream code must explicitly opt into redirect handling only when the target remains allowlisted and safe.
 - **C01-D3 — Configured allowlist:** The setting defaults to an empty list, so an unset or blank allowlist fails closed rather than allowing untrusted upstream hosts.
 
+# M3-C04 Relay Contracts
+
+- **C04-D1 — Stream variant:** The relay accepts only the validated `quality=auto|hd|sd` enum in addition to the media ID path and Range header. The resolver returns `/api/stream/{id}?quality=...` for relay-bound sources so all seek requests resolve the selected variant; arbitrary URLs remain unsupported.
+- **C04-D2 — Re-resolution:** A relay open retries source resolution once after an upstream 401 or an explicit expired-signature 403. A plain 403 is terminal and is not bypassed. Internal resolved targets share the resolver's short-lived RAM cache with source descriptors and are invalidated before the retry.
+- **C04-D3 — Relay transport:** The HTTP client does not follow redirects, validates HTTPS targets against the explicit allowlist before opening, pins each connection to the public DNS addresses validated for that target, uses bounded raw chunks and independent connect/header/idle/total timeouts, and closes upstream responses on completion or downstream cancellation, including termination before the first body chunk. Stream responses default to `Cache-Control: no-store`.
+
 # M3-C02 Range Semantics Contracts
 
 - **C02-D1 — Single-range behavior:** Closed, open-ended, and suffix byte ranges are accepted. Multi-range headers are treated as no Range per G2; malformed or unsatisfiable ranges produce 416 when the object size is known, with `Content-Range: bytes */<size>`. If size is unknown, the upstream response semantics are retained.

@@ -102,6 +102,24 @@ class FakeCDNTests(unittest.TestCase):
                         self.assertEqual(raised.exception.headers["Retry-After"], "1")
                     raised.exception.close()
 
+    def test_redirect_fault_returns_location_without_following_it(self) -> None:
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, request, response, code, message, headers, new_url):
+                return None
+
+        opener = urllib.request.build_opener(NoRedirect)
+        with fake_cdn_server() as cdn:
+            cdn.set_fault(FakeCDNFault.REDIRECT)
+            with self.assertRaises(urllib.error.HTTPError) as raised:
+                opener.open(f"{cdn.base_url}/media/sample.avi", timeout=2)
+            raised.exception.close()
+
+        self.assertEqual(raised.exception.code, 302)
+        self.assertEqual(
+            raised.exception.headers["Location"],
+            "/media/redirect-target.avi",
+        )
+
     def test_expired_signature_fault_fires(self) -> None:
         with fake_cdn_server() as cdn:
             with self.assertRaises(urllib.error.HTTPError) as raised:

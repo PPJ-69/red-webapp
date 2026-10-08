@@ -23,6 +23,23 @@ class UpstreamTargetValidationTests(unittest.TestCase):
                     allowed_hosts=["cdn.example.invalid"],
                 )
 
+    def test_empty_allowlist_fails_closed(self) -> None:
+        with patch.object(socket, "getaddrinfo", return_value=[(None, None, None, None, ("93.184.216.34", 443))]):
+            with self.assertRaisesRegex(ValueError, "not allowlisted"):
+                validate_upstream_target("https://cdn.example.invalid/video.mp4")
+
+    def test_rejects_embedded_credentials_and_fragments(self) -> None:
+        for target in (
+            "https://user:secret@cdn.example.invalid/video.mp4",
+            "https://cdn.example.invalid/video.mp4#fragment",
+        ):
+            with self.subTest(target=target), self.assertRaisesRegex(
+                ValueError, "credentials or a fragment"
+            ):
+                validate_upstream_target(
+                    target, allowed_hosts=["cdn.example.invalid"]
+                )
+
     def test_rejects_private_and_local_targets(self) -> None:
         cases = [
             "https://localhost/media/test.mp4",

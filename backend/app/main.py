@@ -8,6 +8,7 @@ from .api.creators import router as creators_router
 from .api.health import router as health_router
 from .api.media import router as media_router
 from .api.search import router as search_router
+from .api.stream import router as stream_router
 from .api.tags import router as tags_router
 from .dependencies import get_settings
 from .domain.errors import register_exception_handlers
@@ -20,7 +21,12 @@ from .observability.metrics import metrics
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = get_settings()
     app.state.metrics = metrics
-    yield
+    try:
+        yield
+    finally:
+        transport = getattr(app.state, "stream_transport", None)
+        if transport is not None:
+            await transport.aclose()
 
 
 configure_logging()
@@ -33,6 +39,7 @@ app.include_router(health_router)
 app.include_router(search_router)
 app.include_router(creators_router)
 app.include_router(media_router)
+app.include_router(stream_router)
 app.include_router(tags_router)
 register_exception_handlers(app)
 install_request_context(app)

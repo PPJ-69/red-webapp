@@ -2,6 +2,8 @@
 
 **Legend:** **[REQ]** = stated in the spec. **[INF]** = Architectural Inference (recommendation where the spec is silent or ambiguous). **[OPEN]** = Open Decision needing a product or engineering call.
 
+**Version: v1.2 — the relay playback path preserves the validated source quality.**
+
 ---
 
 ## 1. Architecture Summary
@@ -294,7 +296,7 @@ flowchart TD
 | `GET /api/search` | Search/trending/creator results | Backend owns query normalization; explicit pagination; limit capped (≤100) |
 | `GET /api/media/{id}` | Fresh metadata | Canonical `MediaItem` only |
 | `GET /api/media/{id}/source` | Short-lived source descriptor | Returns a browser-safe playback URL; never upstream tokens |
-| `GET /api/stream/{id}` | Range relay | ID-only; 200/206/416 semantics; no body buffering |
+| `GET /api/stream/{id}?quality=auto|hd|sd` | Range relay | Media ID path and validated quality enum only; 200/206/416 semantics; no arbitrary URL or body buffering |
 | `GET /api/creator/{username}` | Creator profile | Canonical `Creator` |
 | `GET /api/tags/suggest?q=` | Autocomplete | Frontend debounces (200–300 ms, ≥2 chars) **[REQ §30]** |
 | `GET /api/session`, `GET /api/session/state`, `POST/DELETE /api/session/favorites/{id}`, `POST /api/session/seen/{id}` | Optional ephemeral server-side state | `no-store`; see O1 on whether v1 needs these |
@@ -304,7 +306,7 @@ flowchart TD
 
 - `MediaSource` is defined with a `url` field in §10 but returned as `playbackUrl` in §68. **[INF]** Use `playbackUrl`. A relay-bound descriptor should only ever carry the internal relay path.
 - §67 has the stream endpoint *redirecting* when no relay is needed, while §13 and §53 have `/source` return the direct URL. **[INF]** Make `/source` the only place the direct-vs-relay decision is communicated, and keep `/api/stream/{id}` relay-only. A redirect from the relay endpoint blurs the contract.
-- **[INF]** The `quality` preference (`auto|hd|sd`) needs a defined carrier. Put it on `/source` and make the choice deterministic in the resolver, so later relay Range requests resolve to the same variant.
+- **[INF]** The `quality` preference (`auto|hd|sd`) is selected on `/source` and echoed as a constrained enum in the relay playback path, so subsequent Range requests resolve to the same variant. This is not a URL target parameter; arbitrary URLs remain prohibited.
 
 ---
 
@@ -353,7 +355,7 @@ flowchart LR
 
 | Boundary | Control | Type |
 |---|---|---|
-| SSRF / open relay | ID-only endpoint; upstream URL resolved server-side; post-resolution host allowlist; reject private/loopback/link-local targets and non-HTTPS schemes | REQ |
+| SSRF / open relay | ID-only endpoint; upstream URL resolved server-side; allowlist and public-IP check; connect only to the exact validated DNS addresses; reject private/loopback/link-local targets, embedded credentials, redirects, and non-HTTPS schemes | REQ |
 | Token leakage | Token confined to Zone 3; redacted logging (no bearer, cookies, signed URLs, session contents, full query history) | REQ |
 | Bandwidth/memory abuse | Per-IP and per-session stream caps; bounded chunk reads; connect/header/idle/total timeouts; abort upstream on disconnect | REQ |
 | Session exhaustion | TTL + absolute lifetime + max-session cap + sweeper | REQ |
@@ -455,7 +457,7 @@ Solid arrows are hard dependencies. Dotted arrows are permitted parallelism or r
 | D7 | `Store` interface on the frontend | Account mode later without rewrite | REQ |
 | D8 | Frontend is authoritative for favorites/seen/history in v1 | One owner; fewer moving parts; avoids server session affinity | INF |
 | D9 | Short-TTL RAM source cache in the resolver | Avoids re-resolving on each Range request | INF |
-| D10 | `/source` is the only place direct-vs-relay is communicated; stream endpoint is relay-only | Clean contract; removes redirect ambiguity | INF |
+| D10 | `/source` is the only place direct-vs-relay is communicated; stream endpoint is relay-only and carries only an optional validated quality enum | Clean contract; removes redirect ambiguity while preserving the source variant on Range requests | INF |
 | D11 | MP4-first; HLS behind a flag and not required for v1 | Relay is ID-based and Range-based, so HLS would need playlist and segment handling that the spec doesn't define | INF |
 | D12 | Same-origin deployment by default | Simplifies CORS, CSP, cookie-free model | REQ (preferred) |
 | D13 | Concurrency caps as primary capacity control | Streams and bandwidth, not request rate, are the scarce resource | REQ |
