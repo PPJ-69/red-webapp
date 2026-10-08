@@ -19,6 +19,8 @@ from backend.app.domain.models import canonical_model_schemas  # noqa: E402
 
 
 def _typescript_type(schema: dict[str, Any]) -> str:
+    if not schema:
+        return "unknown"
     if "$ref" in schema:
         return schema["$ref"].rsplit("/", 1)[-1]
     if "enum" in schema:

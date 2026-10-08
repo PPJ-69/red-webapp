@@ -29,6 +29,24 @@ class SchemaDriftTests(unittest.TestCase):
             )
         )
 
+    def test_unconstrained_schema_generates_unknown_type(self) -> None:
+        generated = render_types(
+            {
+                "Example": {
+                    "type": "object",
+                    "properties": {
+                        "value": {},
+                        "nullableValue": {
+                            "anyOf": [{}, {"type": "null"}],
+                        },
+                    },
+                },
+            }
+        )
+
+        self.assertIn("value?: unknown;", generated)
+        self.assertIn("nullableValue?: unknown | null;", generated)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,6 +33,9 @@ export type MediaItem = {
 export type MediaSource = {
   playbackUrl: string;
   mimeType?: string | null;
+  kind?: string | null;
+  requiresRelay?: boolean | null;
+  expiresAt?: unknown | null;
 };
 
 export type SearchQuery = {
