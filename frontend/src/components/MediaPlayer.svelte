@@ -6,6 +6,15 @@
     IllegalPlayerTransitionError,
     playerEventForMediaEvent,
   } from "../stores/playerStore";
+  import { ApiError, type ClientErrorCategory } from "../services/errors";
+  import ErrorState from "./ErrorState.svelte";
+  import {
+    decidePlaybackRecovery,
+    inspectRelayPlaybackFailure,
+    playbackErrorCategory,
+    type PlaybackRecoveryDecision,
+    type RecoveryAttempts,
+  } from "../services/playbackRecovery";
   import type {
     NativeMediaEventName,
     PlayerEvent,
@@ -21,17 +30,25 @@
   export let volume = 1;
   export let speed = 1;
   export let quality: Quality = "auto";
+  export let openUrl: string | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
     playerEvent: { event: PlayerEvent; state: PlayerState };
+    skip: undefined;
   }>();
   const playerStore = createPlayerStore();
   let video: HTMLVideoElement;
   let mounted = false;
   let activeController: AbortController | undefined;
   let activeRequest = 0;
+  let diagnosedRequest = -1;
   let ignoreEmptiedUntilLoadStarts = false;
-  let sourceError = "";
+  let recoveryAttempts: RecoveryAttempts = {
+    reauthorized: false,
+    alternateQuality: false,
+  };
+  let activeQuality: Quality = quality;
+  let recoveryDecision: PlaybackRecoveryDecision | undefined;
   $: snapshot = $playerStore;
 
   $: if (video) {
@@ -50,6 +67,11 @@
 
   function handleMediaEvent(event: Event): void {
     const eventName = event.type as NativeMediaEventName;
+    if (eventName === "error") {
+      if (ignoreEmptiedUntilLoadStarts || !video.currentSrc) return;
+      void handlePlaybackError();
+      return;
+    }
     if (eventName === "loadstart") ignoreEmptiedUntilLoadStarts = false;
     if (
       eventName === "emptied" &&
@@ -74,18 +96,26 @@
   async function resolveAndLoad(
     requestedItemId: string,
     requestedQuality: Quality,
+    attempts: RecoveryAttempts = { reauthorized: false, alternateQuality: false },
+    isManualRetry = false,
   ): Promise<void> {
     const requestId = ++activeRequest;
     activeController?.abort();
     const controller = new AbortController();
     activeController = controller;
-    sourceError = "";
+    activeQuality = requestedQuality;
+    recoveryAttempts = attempts;
+    recoveryDecision = undefined;
     ignoreEmptiedUntilLoadStarts = true;
     video.pause();
     video.removeAttribute("src");
     video.load();
-    apply({ type: "RESET" });
-    apply({ type: "OPEN" });
+    if (isManualRetry && playerStore.getSnapshot().state === "ERROR") {
+      apply({ type: "RETRY" });
+    } else {
+      apply({ type: "RESET" });
+      apply({ type: "OPEN" });
+    }
 
     try {
       const source = await sourceService.resolve(
@@ -104,11 +134,112 @@
       }
     } catch (error) {
       if (requestId !== activeRequest || controller.signal.aborted) return;
-      sourceError =
-        error instanceof Error
-          ? error.message
-          : "The media source could not be loaded.";
+      handleRecoveryError(
+        error instanceof ApiError ? error.category : "provider_error",
+        error instanceof ApiError ? error.retryAfter : undefined,
+        requestedItemId,
+        requestedQuality,
+        attempts,
+      );
+    }
+  }
+
+  async function handlePlaybackError(): Promise<void> {
+    const requestId = activeRequest;
+    if (diagnosedRequest === requestId) return;
+    diagnosedRequest = requestId;
+    const signal = activeController?.signal ?? new AbortController().signal;
+    const mediaError = video.error;
+    const relayError = await inspectRelayPlaybackFailure(
+      video.getAttribute("src") ?? "",
+      signal,
+    );
+    if (requestId !== activeRequest || signal.aborted) return;
+    const category =
+      relayError?.category ?? playbackErrorCategory(mediaError?.code);
+    handleRecoveryError(
+      category,
+      relayError?.retryAfter,
+      itemId,
+      activeQuality,
+      recoveryAttempts,
+    );
+  }
+
+  function handleRecoveryError(
+    category: ClientErrorCategory,
+    retryAfter: number | undefined,
+    requestedItemId: string,
+    requestedQuality: Quality,
+    attempts: RecoveryAttempts,
+  ): void {
+    const decision = decidePlaybackRecovery(
+      category,
+      attempts,
+      requestedQuality,
+      retryAfter,
+    );
+    if (decision.action === "reauthorize") {
+      void resolveAndLoad(requestedItemId, requestedQuality, {
+        ...attempts,
+        reauthorized: true,
+      });
+      return;
+    }
+    if (
+      decision.action === "alternate_quality" &&
+      decision.alternateQuality !== undefined
+    ) {
+      void resolveAndLoad(
+        requestedItemId,
+        decision.alternateQuality,
+        { ...attempts, alternateQuality: true },
+      );
+      return;
+    }
+    recoveryDecision = decision;
+    if (playerStore.getSnapshot().state !== "ERROR") {
       apply({ type: "ERROR" });
+    }
+  }
+
+  function retry(): void {
+    void resolveAndLoad(
+      itemId,
+      quality,
+      { reauthorized: false, alternateQuality: false },
+      true,
+    );
+  }
+
+  function skip(): void {
+    activeRequest += 1;
+    activeController?.abort();
+    video.pause();
+    ignoreEmptiedUntilLoadStarts = true;
+    video.removeAttribute("src");
+    video.load();
+    apply({ type: "SKIP" });
+    dispatch("skip", undefined);
+  }
+
+  function open(): void {
+    if (!isSafeWebUrl(openUrl)) return;
+    window.open(openUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function isSafeWebUrl(value: string | undefined): value is string {
+    if (value === undefined) return false;
+    try {
+      const url = new URL(value);
+      return (
+        url.protocol === "https:" &&
+        url.hostname.length > 0 &&
+        url.username === "" &&
+        url.password === ""
+      );
+    } catch {
+      return false;
     }
   }
 
@@ -157,10 +288,15 @@
     <p class="player-overlay" data-testid="buffering" role="status" aria-live="polite">
       Buffering…
     </p>
-  {:else if snapshot.state === "ERROR"}
-    <p class="player-overlay error" data-testid="player-error" role="alert">
-      {sourceError || "Playback could not be started."}
-    </p>
+  {/if}
+  {#if snapshot.state === "ERROR" && recoveryDecision}
+    <ErrorState
+      decision={recoveryDecision}
+      {openUrl}
+      on:retry={retry}
+      on:skip={skip}
+      on:open={open}
+    />
   {/if}
 </section>
 
@@ -189,7 +325,4 @@
     text-align: center;
   }
 
-  .error {
-    color: #fecaca;
-  }
 </style>

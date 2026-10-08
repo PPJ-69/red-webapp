@@ -56,3 +56,9 @@
 
 - **C06-D1 — Development-only fixture path:** The native-video proof page is a Vite development entry explicitly excluded from production Rollup inputs. Its test API and fixture-upload/fault controls live only under `backend.tests`, use a port-scoped loopback fake CDN, and are not registered in the production application.
 - **C06-D2 — Gate evidence:** Browser playback is exercised with a WebM clip generated and kept in browser memory. The relay memory test uses deterministic synthetic bytes; compliance monitors cover the browser session and repository while playback is running. Live provider use remains gated by O6.
+
+# M4-C03 Playback Recovery Contracts
+
+- **C03-D1 — Relay error diagnosis:** Native media errors do not expose the relay's structured error envelope. For a relay playback URL only, the player may make one diagnostic `Range: bytes=0-0` request after a native media error, read a non-success error envelope, and immediately cancel any successful response body. Direct playback URLs are never probed; no endpoint or upstream URL contract changes.
+- **C03-D2 — Bounded recovery:** Re-resolve once for upstream authentication expiry and try one alternate quality for unsupported media. Plain forbidden and not-found errors are terminal Unavailable states with no retry or bypass; rate limits display `Retry-After` when the API response is available and only retry after explicit user action.
+- **C03-D3 — Player actions:** Retry restarts source resolution; Skip releases the current media and emits an intent without navigating the queue; Open is shown only for a credential-free HTTPS URL. Queue navigation remains in M4-C05.

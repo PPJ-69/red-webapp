@@ -101,11 +101,20 @@ def create_poc_app(cdn: FakeCDN) -> FastAPI:
 
     @app.post("/__poc/fault")
     async def set_fault(
-        fault: str = Query(pattern=r"^(clear|server_error)$"),
+        fault: str = Query(
+            pattern=r"^(clear|server_error|not_found|forbidden|rate_limited|expired_signature|expired_signature_once)$"
+        ),
     ) -> dict[str, str]:
-        cdn.set_fault(
-            None if fault == "clear" else FakeCDNFault.SERVER_ERROR
-        )
+        selected_fault = {
+            "clear": None,
+            "server_error": FakeCDNFault.SERVER_ERROR,
+            "not_found": FakeCDNFault.NOT_FOUND,
+            "forbidden": FakeCDNFault.FORBIDDEN,
+            "rate_limited": FakeCDNFault.RATE_LIMITED,
+            "expired_signature": FakeCDNFault.EXPIRED_SIGNATURE,
+            "expired_signature_once": FakeCDNFault.EXPIRED_SIGNATURE_ONCE,
+        }[fault]
+        cdn.set_fault(selected_fault)
         return {"fault": fault}
 
     @app.post("/__poc/fixture")

@@ -164,6 +164,12 @@ class PlayerBasicBrowserTests(unittest.TestCase):
                 )
                 with urlopen(upload, timeout=5) as response:
                     self.assertEqual(response.status, 200)
+                expiry_fault = Request(
+                    f"http://127.0.0.1:{self.api_port}/__poc/fault?fault=expired_signature_once",
+                    method="POST",
+                )
+                with urlopen(expiry_fault, timeout=5) as response:
+                    self.assertEqual(response.status, 200)
 
                 media_responses: list[tuple[str, int, str | None]] = []
                 page.on(
@@ -242,6 +248,15 @@ class PlayerBasicBrowserTests(unittest.TestCase):
                 self.assertIsNotNone(source_url)
                 self.assertIn("/api/stream/sample-media", source_url or "")
                 self.assertGreater(video.evaluate("element => element.duration"), 4)
+                first_playback_stats = page.evaluate(
+                    "async () => await (await fetch('/__poc/stats')).json()"
+                )
+                self.assertGreaterEqual(
+                    first_playback_stats["cdnConnectionsOpened"],
+                    2,
+                    "Expired source did not recover through the relay's single re-resolution.",
+                )
+                self.assertGreaterEqual(first_playback_stats["cdnConnectionsClosed"], 1)
 
                 video.evaluate("element => element.play()")
                 expect(page.get_by_test_id("player-state")).to_have_text("PLAYING")

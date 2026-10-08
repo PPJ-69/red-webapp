@@ -24,6 +24,7 @@ class FakeCDNFault(str, Enum):
     SERVER_ERROR = "500"
     REDIRECT = "redirect"
     EXPIRED_SIGNATURE = "expired_signature"
+    EXPIRED_SIGNATURE_ONCE = "expired_signature_once"
     REQUIRED_AUTH_HEADER = "required_auth_header"
     MISSING_CONTENT_LENGTH = "missing_content_length"
     NO_RANGE_SUPPORT = "no_range_support"
@@ -65,7 +66,10 @@ class _FakeCDNServer(ThreadingHTTPServer):
 
     def get_fault(self) -> FakeCDNFault | None:
         with self.fault_lock:
-            return self.fault
+            fault = self.fault
+            if fault is FakeCDNFault.EXPIRED_SIGNATURE_ONCE:
+                self.fault = None
+            return fault
 
     def connection_opened(self) -> None:
         with self.state_lock:
@@ -136,7 +140,10 @@ class _FakeCDNHandler(BaseHTTPRequestHandler):
             status, message = _STATUS_FAULTS[fault]
             self._send_error(status, message)
             return
-        if fault is FakeCDNFault.EXPIRED_SIGNATURE or (
+        if fault in {
+            FakeCDNFault.EXPIRED_SIGNATURE,
+            FakeCDNFault.EXPIRED_SIGNATURE_ONCE,
+        } or (
             parse_qs(route.query).get("signature") == ["expired"]
         ):
             self._send_error(403, "Expired signature")
