@@ -8,6 +8,12 @@
   } from "../stores/playerStore";
   import { ApiError, type ClientErrorCategory } from "../services/errors";
   import ErrorState from "./ErrorState.svelte";
+  import KeyboardHelp from "./KeyboardHelp.svelte";
+  import PlayerControls from "./PlayerControls.svelte";
+  import {
+    installKeyboardController,
+    type KeyboardAction,
+  } from "../services/keyboardController";
   import {
     decidePlaybackRecovery,
     inspectRelayPlaybackFailure,
@@ -35,6 +41,12 @@
   const dispatch = createEventDispatcher<{
     playerEvent: { event: PlayerEvent; state: PlayerState };
     skip: undefined;
+    next: undefined;
+    previous: undefined;
+    retry: undefined;
+    toggleFavorite: undefined;
+    close: undefined;
+    help: undefined;
   }>();
   const playerStore = createPlayerStore();
   let video: HTMLVideoElement;
@@ -49,7 +61,15 @@
   };
   let activeQuality: Quality = quality;
   let recoveryDecision: PlaybackRecoveryDecision | undefined;
+  let currentTime = 0;
+  let duration = 0;
+  let showKeyboardHelp = false;
+  let controlAnnouncement = "";
   $: snapshot = $playerStore;
+  $: isPlaying =
+    snapshot.state === "PLAYING" ||
+    (snapshot.state === "BUFFERING" && snapshot.resumeState === "PLAYING") ||
+    (snapshot.state === "SEEKING" && snapshot.resumeState === "PLAYING");
 
   $: if (video) {
     video.volume = volume;
@@ -67,6 +87,14 @@
 
   function handleMediaEvent(event: Event): void {
     const eventName = event.type as NativeMediaEventName;
+    if (
+      eventName === "timeupdate" ||
+      eventName === "durationchange" ||
+      eventName === "loadedmetadata"
+    ) {
+      currentTime = video.currentTime;
+      duration = Number.isFinite(video.duration) ? video.duration : 0;
+    }
     if (eventName === "error") {
       if (ignoreEmptiedUntilLoadStarts || !video.currentSrc) return;
       void handlePlaybackError();
@@ -212,6 +240,117 @@
     );
   }
 
+  function togglePlayback(): void {
+    if (video.paused) {
+      void video.play().catch(() => void handlePlaybackError());
+    } else {
+      video.pause();
+    }
+  }
+
+  function seekTo(time: number): void {
+    if (!Number.isFinite(duration) || duration <= 0) return;
+    video.currentTime = Math.max(0, Math.min(duration, time));
+  }
+
+  function adjustVolume(nextVolume: number): void {
+    volume = Math.max(0, Math.min(1, nextVolume));
+    video.volume = volume;
+    if (volume > 0 && muted) {
+      muted = false;
+      video.muted = false;
+    }
+  }
+
+  function toggleMute(): void {
+    muted = !muted;
+    video.muted = muted;
+  }
+
+  function setSpeed(nextSpeed: number): void {
+    speed = Math.max(0.25, Math.min(4, nextSpeed));
+    video.playbackRate = speed;
+  }
+
+  function toggleLoop(): void {
+    loop = !loop;
+    video.loop = loop;
+  }
+
+  function openKeyboardHelp(): void {
+    showKeyboardHelp = true;
+    dispatch("help", undefined);
+  }
+
+  async function toggleFullscreen(): Promise<void> {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        const player = video.closest(".player");
+        if (!player) {
+          controlAnnouncement = "Fullscreen is not available in this browser.";
+          return;
+        }
+        await player.requestFullscreen();
+      }
+      controlAnnouncement = document.fullscreenElement
+        ? "Fullscreen enabled."
+        : "Fullscreen disabled.";
+    } catch {
+      controlAnnouncement = "Fullscreen is not available in this browser.";
+    }
+  }
+
+  function handleKeyboardAction(action: KeyboardAction): void {
+    switch (action) {
+      case "toggle-play":
+        togglePlayback();
+        break;
+      case "seek-backward":
+        seekTo(video.currentTime - 5);
+        break;
+      case "seek-forward":
+        seekTo(video.currentTime + 5);
+        break;
+      case "volume-up":
+        adjustVolume(volume + 0.05);
+        break;
+      case "volume-down":
+        adjustVolume(volume - 0.05);
+        break;
+      case "toggle-mute":
+        toggleMute();
+        break;
+      case "toggle-loop":
+        toggleLoop();
+        break;
+      case "toggle-fullscreen":
+        void toggleFullscreen();
+        break;
+      case "toggle-help":
+        openKeyboardHelp();
+        break;
+      case "next":
+        dispatch("next", undefined);
+        break;
+      case "previous":
+        dispatch("previous", undefined);
+        break;
+      case "retry":
+        dispatch("retry", undefined);
+        if (snapshot.state === "ERROR") retry();
+        break;
+      case "toggle-favorite":
+        dispatch("toggleFavorite", undefined);
+        break;
+      case "close":
+        showKeyboardHelp = false;
+        dispatch("close", undefined);
+        break;
+    }
+  }
+
   function skip(): void {
     activeRequest += 1;
     activeController?.abort();
@@ -245,7 +384,12 @@
 
   onMount(() => {
     mounted = true;
+    const removeKeyboardController = installKeyboardController(
+      window,
+      handleKeyboardAction,
+    );
     return () => {
+      removeKeyboardController();
       mounted = false;
       activeRequest += 1;
       activeController?.abort();
@@ -276,10 +420,34 @@
     on:waiting={handleMediaEvent}
     on:stalled={handleMediaEvent}
     on:canplay={handleMediaEvent}
+    on:timeupdate={handleMediaEvent}
+    on:durationchange={handleMediaEvent}
     on:ended={handleMediaEvent}
     on:error={handleMediaEvent}
     on:emptied={handleMediaEvent}
   ></video>
+  <PlayerControls
+    {currentTime}
+    {duration}
+    playing={isPlaying}
+    {volume}
+    {muted}
+    {speed}
+    {loop}
+    on:playPause={togglePlayback}
+    on:seek={(event) => seekTo(event.detail)}
+    on:volume={(event) => adjustVolume(event.detail)}
+    on:mute={toggleMute}
+    on:speed={(event) => setSpeed(event.detail)}
+    on:loop={toggleLoop}
+    on:fullscreen={() => void toggleFullscreen()}
+    on:help={openKeyboardHelp}
+  />
+  <KeyboardHelp
+    open={showKeyboardHelp}
+    on:close={() => (showKeyboardHelp = false)}
+  />
+  <p class="control-announcement" aria-live="polite">{controlAnnouncement}</p>
   {#if snapshot.state === "RESOLVING" || snapshot.state === "LOADING"}
     <p class="player-overlay" data-testid="loading" role="status" aria-live="polite">
       Loading…
@@ -323,6 +491,29 @@
     background: rgb(0 0 0 / 75%);
     color: #fff;
     text-align: center;
+  }
+
+  .control-announcement {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
 </style>

@@ -4,6 +4,10 @@
 
   let itemId = "sample-media";
   let playerState: PlayerState = "IDLE";
+  let muted = true;
+  let loop = false;
+  let volume = 1;
+  let speed = 1;
   const quality: Quality = "auto";
 
   function handlePlayerEvent(
@@ -27,10 +31,10 @@
   <MediaPlayer
     {itemId}
     autoplay={false}
-    muted={true}
-    loop={false}
-    volume={1}
-    speed={1}
+    bind:muted
+    bind:loop
+    bind:volume
+    bind:speed
     {quality}
     on:playerEvent={handlePlayerEvent}
   />

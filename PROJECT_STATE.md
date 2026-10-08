@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **18 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **21 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M4: Player**
 
 ## Current Chunk
-**M4-C04: Controls, keyboard controller, player accessibility**
+**M4-C05: PlayerOverlay and queue-based navigation with prefetch policy**
 - Status: pending.
-- Depends on: M4-C02.
-- Handoff: implement only native player controls, keyboard routing, and accessibility; keep recovery behavior in M4-C03 and queue behavior in M4-C05.
+- Depends on: M4-C02, M4-C04.
+- Handoff: implement only player overlay, queue navigation, and bounded prefetch policy; keep favorite persistence outside this chunk.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -38,13 +38,14 @@
 - **M4-C01:** Added typed player states/events, strict transition validation, native-media-event mapping, an in-memory Svelte-compatible player store, restoration of play/pause intent across seeking and buffering, and RETRY/SKIP/NEXT/LOOP actions.
 - **M4-C02:** Added typed source resolution with safe playback URL validation, cancellable native MediaPlayer source lifecycle, loading/buffering overlays, the temporary player shell, and Chromium E2E using the fake provider/CDN. The client binds browser `fetch` correctly; stale `emptied` events during item switches no longer reset the new source.
 - **M4-C03:** Added a typed playback-recovery decision table, quality/auth retry limits, item-level unavailable/rate-limit/error states, Retry/Skip/Open actions, and error-envelope diagnosis for failed relay playback via a one-byte Range request. Added one-shot expired-signature fake-CDN behavior for browser coverage; forbidden sources remain terminal with no retry or bypass.
+- **M4-C04:** Added accessible native playback controls, keyboard shortcut routing with focus-aware typing suppression, keyboard help, and emitted player intent events. Fullscreen covers the player section so controls remain available while fullscreen. Queue and favorite behavior remain unwired.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
 
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
-- **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard (current) · C05 overlay/queue/prefetch
+- **M4 Player:** C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch (current)
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
@@ -84,10 +85,11 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M4-C01:** All 70 frontend unit tests pass, including valid/invalid state-event combinations, startup/seek/stall/end/error sequences, play/pause restoration, loop/retry/skip/next actions, subscriber updates, and a static no-clock/no-polling guard. Svelte type-check passes.
 - **M4-C02:** All 78 frontend unit tests pass, including source URL validation, ID encoding, quality propagation, and abort-signal forwarding. Svelte type-check and production build pass. Chromium E2E passes for metadata load, native play, buffering/canplay transitions, item switching, and upstream connection cleanup using only the fake provider/CDN.
 - **M4-C03:** All 91 frontend unit tests pass, including recovery decisions, bounded auth/quality retries, relay-only error diagnosis, and timing messages. Svelte type-check and production build pass. Five Chromium E2E cases pass for source re-resolution, fake-CDN expired-signature recovery, 404 unavailable/no-retry, 429 timing/manual retry, and skip behavior. Full backend suite passes (145 tests).
+- **M4-C04:** All 118 frontend unit tests pass, including the selected keyboard map, modifier/repeat handling, and typing-focus suppression including contenteditable variants. Svelte type-check, production build, storage policy check, and Chromium E2E pass for mute, volume, speed, loop, fullscreen, keyboard seek, shortcut-help dialog, and accessible control names. Existing lifecycle and recovery browser suites also pass.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
-- Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (from M4-C02), schema-drift check, storage-API lint.
+- Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls), schema-drift check, storage-API lint.
 
 ## Open Decisions
 O5 is resolved; other gates remain open and use their listed defaults until resolved.
@@ -109,7 +111,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M4-C03: bounded source recovery, error-category-based item UX, Retry/Skip/Open actions, and fake-CDN browser scenarios. Relay error diagnosis uses a one-byte Range request only after native playback fails because the browser does not expose the response envelope to `<video>`.
-- **Next:** M4-C04 native controls, keyboard routing, and accessibility. Do not add queue behavior from M4-C05.
-- **Watch:** Live-provider smoke remains blocked by O6; all M4-C03 playback tests use fake sources/CDN. Plain 403 remains terminal, with no retry or bypass. Direct-vs-relay product observation remains open under O3. Known Issues 1 and 2 before M5.
+- **Done:** Completed M4-C04: accessible native controls, keyboard shortcuts/help, and control intent events. The selected key map is recorded in DECISIONS.md; fullscreen retains the controls by targeting the player section.
+- **Next:** M4-C05 player overlay, queue navigation, and prefetch policy. Keep favorite/next/previous behavior within its approved scope and do not pull in M5 persistence.
+- **Watch:** Live-provider smoke remains blocked by O6; all player E2E uses fake sources/CDN. M4-C04 emits navigation/favorite intents only; queue and favorite behavior remain unwired until their planned chunks. Known Issues 1 and 2 remain before M5.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

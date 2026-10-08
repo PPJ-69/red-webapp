@@ -62,3 +62,8 @@
 - **C03-D1 — Relay error diagnosis:** Native media errors do not expose the relay's structured error envelope. For a relay playback URL only, the player may make one diagnostic `Range: bytes=0-0` request after a native media error, read a non-success error envelope, and immediately cancel any successful response body. Direct playback URLs are never probed; no endpoint or upstream URL contract changes.
 - **C03-D2 — Bounded recovery:** Re-resolve once for upstream authentication expiry and try one alternate quality for unsupported media. Plain forbidden and not-found errors are terminal Unavailable states with no retry or bypass; rate limits display `Retry-After` when the API response is available and only retry after explicit user action.
 - **C03-D3 — Player actions:** Retry restarts source resolution; Skip releases the current media and emits an intent without navigating the queue; Open is shown only for a credential-free HTTPS URL. Queue navigation remains in M4-C05.
+
+# M4-C04 Player Controls Contracts
+
+- **C04-D1 — Keyboard map:** Space toggles play/pause; Left/Right seek by 5 seconds; Up/Down adjust volume by 0.05; M toggles mute; L toggles loop; F toggles fullscreen; ? opens shortcut help; N/P/R/V/Escape emit next/previous/retry/favorite/close intents. F is fullscreen and V is favorite. These intents do not implement queue or favorite behavior.
+- **C04-D2 — Focus and playback authority:** Player shortcuts do not override text-entry or interactive control targets, except Escape remains available to close. The native video element remains authoritative for playback and the controls act on its media properties/events.
