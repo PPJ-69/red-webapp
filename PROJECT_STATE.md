@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1 baseline.** ARCHITECTURE.md carries no version tag; this is the first checkpoint (2026-10-02).
-- Implementation progress: **7 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **8 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M2: Upstream Adapter & Media Resolution**
 
 ## Current Chunk
-**M2-C03: Upstream search and listing pipeline**
-- Status: pending; M2-C02 adapter + mapper are complete.
-- Depends on: M2-C02.
-- Handoff: continue with the search/listing path and provider contract extensions in IMPLEMENTATION_PLAN.md.
+**M2-C04: Creator profile and tag suggestions**
+- Status: pending.
+- Depends on: M2-C02, M2-C03.
+- Handoff: continue with the creator and tag-discovery surface introduced in IMPLEMENTATION_PLAN.md.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -26,6 +26,7 @@
 - **M1-C06:** GitHub Actions CI, frontend storage-API lint, backend/frontend lockfiles, and dependency scans. Storage/lockfile gate tests pass; npm and Python dependency scans report no known vulnerabilities.
 - **M2-C01:** Upstream auth manager, single-flight refresh behavior, bounded retry transport, and upstream error classification. Ten focused tests pass; token values stay out of exception text.
 - **M2-C02:** RedGIFs adapter + canonical media mapper using fixture-backed payloads; provider contract suite passes and raw upstream fields remain isolated behind canonical models.
+- **M2-C03:** Search/listing pipeline complete. Added query normalization, `/api/search` endpoint, provider-backed search service, and focused tests for normalization and API behavior. Targeted backend tests pass.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -90,7 +91,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M2-C02: RedGIFs adapter and canonical mapper with fixture-backed provider contract tests; raw upstream shapes remain behind canonical models and auth stays server-side.
-- **Next:** Implement M2-C03 search/listing pipeline and expand provider contract coverage for the upstream search behavior.
+- **Done:** Completed M2-C03: normalized search/listing behavior, `/api/search` endpoint, provider-backed service path, and focused tests for query parsing and validation.
+- **Next:** Implement M2-C04 creator profile and tag suggestions without changing the search contract or adapter boundary.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
