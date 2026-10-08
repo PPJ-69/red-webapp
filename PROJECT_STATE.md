@@ -12,10 +12,10 @@
 **M2: Upstream Adapter & Media Resolution**
 
 ## Current Chunk
-**M2-C02: RedGIFs adapter: media lookup, mapper, contract harness**
-- Status: pending; M2-C01 auth and transport are in place.
-- Depends on: M2-C01.
-- Handoff: continue with the RedGIFs adapter boundary and canonical media mapping in IMPLEMENTATION_PLAN.md.
+**M2-C03: Upstream search and listing pipeline**
+- Status: pending; M2-C02 adapter + mapper are complete.
+- Depends on: M2-C02.
+- Handoff: continue with the search/listing path and provider contract extensions in IMPLEMENTATION_PLAN.md.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -25,6 +25,7 @@
 - **M1-C05:** Live filesystem/browser-storage compliance monitors and self-check. Detects media, database, settings writes including child-process writes; detects browser storage API access and service-worker registration. Seven self-check tests pass.
 - **M1-C06:** GitHub Actions CI, frontend storage-API lint, backend/frontend lockfiles, and dependency scans. Storage/lockfile gate tests pass; npm and Python dependency scans report no known vulnerabilities.
 - **M2-C01:** Upstream auth manager, single-flight refresh behavior, bounded retry transport, and upstream error classification. Ten focused tests pass; token values stay out of exception text.
+- **M2-C02:** RedGIFs adapter + canonical media mapper using fixture-backed payloads; provider contract suite passes and raw upstream fields remain isolated behind canonical models.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -89,7 +90,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-08
-- **Done:** Completed M2-C01: auth manager, single-flight refresh, bounded retry transport, and upstream error classification. Ten focused tests pass, and tokens stay out of exception text.
-- **Next:** Implement M2-C02 RedGIFs adapter + media mapping contract harness, keeping the provider boundary isolated from the app-facing canonical models.
+- **Done:** Completed M2-C02: RedGIFs adapter and canonical mapper with fixture-backed provider contract tests; raw upstream shapes remain behind canonical models and auth stays server-side.
+- **Next:** Implement M2-C03 search/listing pipeline and expand provider contract coverage for the upstream search behavior.
 - **Watch:** Known Issues 1 and 2 before M5. Do a live upstream spike only after O6 is cleared.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

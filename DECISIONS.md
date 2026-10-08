@@ -22,3 +22,9 @@
 - **C01-D1 — Token lifetime and refresh:** Upstream auth tokens are held in memory only, with a TTL and refresh leeway; refreshes are serialized so concurrent callers share a single in-flight refresh.
 - **C01-D2 — Failure classification:** Upstream outcomes map to stable application categories without leaking provider credentials or raw auth headers into exception text. A 401 triggers a single refresh attempt before the request is retried; 400/404/416 are terminal assertions, while 429/5xx paths are retried with bounded exponential backoff and `Retry-After` when present.
 - **C01-D3 — Transport boundary:** The upstream transport owns connect/read timeout controls and handles provider connectivity, timeout, and retry behavior; it never exposes raw upstream auth values to the browser or logs.
+
+# M2-C02 RedGIFs Mapping Contracts
+
+- **C02-D1 — Canonical mapping boundary:** The RedGIFs adapter converts upstream JSON to canonical backend models only; raw upstream fields such as provider-specific payload keys, signed URLs, or auth headers are never exposed to application code or browser responses.
+- **C02-D2 — Recorded provider contract:** The adapter must satisfy the reusable `ProviderContract` for authentication, media lookup, creator lookup, search, tag suggestions, and source resolution using fixture-backed payloads, so the live dependency remains isolated until O6 is cleared.
+- **C02-D3 — Tolerant normalization:** Missing optional metadata is dropped to null/empty values, and malformed records are skipped rather than crashing the whole result set; the adapter raises provider-level application errors only for actual upstream faults or unsupported responses.
