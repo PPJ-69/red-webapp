@@ -80,20 +80,35 @@ class PlayerNavigationBrowserTests(PlayerBasicBrowserTests):
                 )
                 self.open_first_search_result(page)
                 video = page.get_by_test_id("media-player")
+
                 def wait_for_item(media_id: str) -> None:
                     page.wait_for_function(
-                        """mediaId => document.querySelector('video').currentSrc
-                          .includes(mediaId)""",
+                        """mediaId => {
+                          const video = document.querySelector('video');
+                          return !!video && !!video.currentSrc &&
+                            new URL(video.currentSrc).pathname.endsWith(
+                              `/api/stream/${mediaId}`
+                            );
+                        }""",
                         arg=media_id,
+                        timeout=30000,
                     )
                     video.evaluate("element => element.pause()")
                     page.wait_for_function(
-                        """() => document.querySelector('[data-testid="player-state"]')
-                          .textContent === "PAUSED" """
+                        """() => {
+                          const state = document.querySelector(
+                            '[data-testid="player-state"]'
+                          );
+                          return !!state && state.textContent.trim() === "PAUSED";
+                        }""",
+                        timeout=30000,
                     )
 
                 page.wait_for_function(
-                    "() => document.querySelector('video').readyState >= 1",
+                    """() => {
+                      const video = document.querySelector('video');
+                      return !!video && video.readyState >= 1;
+                    }""",
                     timeout=10000,
                 )
                 video.evaluate("element => element.pause()")
@@ -117,7 +132,14 @@ class PlayerNavigationBrowserTests(PlayerBasicBrowserTests):
                     "Second sample"
                 )
                 page.wait_for_function(
-                    "() => document.querySelector('video').currentSrc.includes('sample-media-two')"
+                    """() => {
+                      const video = document.querySelector('video');
+                      return !!video && !!video.currentSrc &&
+                        new URL(video.currentSrc).pathname.endsWith(
+                          "/api/stream/sample-media-two"
+                        );
+                    }""",
+                    timeout=30000,
                 )
                 expect(page.get_by_test_id("next-item")).to_be_disabled()
                 page.get_by_test_id("previous-item").click()
@@ -150,7 +172,14 @@ class PlayerNavigationBrowserTests(PlayerBasicBrowserTests):
                     "Second sample"
                 )
                 page.wait_for_function(
-                    "() => document.querySelector('video').currentSrc.includes('sample-media-two')"
+                    """() => {
+                      const video = document.querySelector('video');
+                      return !!video && !!video.currentSrc &&
+                        new URL(video.currentSrc).pathname.endsWith(
+                          "/api/stream/sample-media-two"
+                        );
+                    }""",
+                    timeout=30000,
                 )
                 page.evaluate(
                     """() => document.querySelector("video")
