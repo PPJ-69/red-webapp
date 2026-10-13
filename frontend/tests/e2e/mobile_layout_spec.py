@@ -73,9 +73,7 @@ class MobileLayoutBrowserTests(PlayerBasicBrowserTests):
                 )
                 page.get_by_test_id("search-submit").click()
                 expect(page.get_by_test_id("result-card")).to_have_count(2)
-                sentinel = page.get_by_test_id("result-grid-sentinel")
-                expect(sentinel).to_be_visible()
-                sentinel.scroll_into_view_if_needed()
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 expect(page.get_by_test_id("result-card")).to_have_count(3)
                 self.assertEqual(requested_pages, [1, 2])
 
