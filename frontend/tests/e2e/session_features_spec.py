@@ -22,6 +22,8 @@ class SessionFeaturesBrowserTests(PlayerBasicBrowserTests):
                         content_type="application/json",
                         body=(
                             '{"items":[{"id":"sample-media","title":"Sample media",'
+                            '"tags":[],"creator":{"id":"creator","username":"maker"}},'
+                            '{"id":"sample-media-two","title":"Second sample",'
                             '"tags":[],"creator":{"id":"creator","username":"maker"}}],'
                             '"page":1,"limit":20,"hasMore":false}'
                         ),
@@ -48,6 +50,7 @@ class SessionFeaturesBrowserTests(PlayerBasicBrowserTests):
                 expect(page.get_by_test_id("search-history")).to_contain_text(
                     "cats #cute"
                 )
+                expect(page.get_by_test_id("result-card")).to_have_count(2)
                 page.get_by_test_id("save-search").click()
                 expect(page.get_by_test_id("saved-searches")).to_contain_text(
                     "cats #cute"
@@ -55,7 +58,7 @@ class SessionFeaturesBrowserTests(PlayerBasicBrowserTests):
                 page.get_by_test_id("history-search").click()
                 page.get_by_test_id("saved-search").click()
                 expect(page.get_by_test_id("search-status")).to_contain_text(
-                    "1 results loaded."
+                    "2 results loaded."
                 )
 
                 card_favorite = page.get_by_test_id("result-card").get_by_test_id(
@@ -63,10 +66,14 @@ class SessionFeaturesBrowserTests(PlayerBasicBrowserTests):
                 )
                 card_favorite.click()
                 expect(card_favorite).to_have_attribute("aria-pressed", "true")
-                page.get_by_test_id("toggle-favorites").click()
+                page.get_by_test_id("navigate-favorites").click()
                 expect(page.get_by_test_id("favorites-panel")).to_contain_text(
                     "Hydrated favorite"
                 )
+                page.get_by_test_id("navigate-discovery").click()
+                page.get_by_test_id("result-card").first.locator(
+                    "button.card-button"
+                ).click()
 
                 page.evaluate(
                     "document.activeElement instanceof HTMLElement && "

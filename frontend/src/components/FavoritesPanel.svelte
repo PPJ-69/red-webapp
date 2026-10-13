@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
 
-  import { ApiClient, apiClient } from "../services/apiClient";
+  import { apiClient, type ApiClient } from "../services/apiClient";
   import {
     hydrateFavoriteMetadata,
     type FavoriteMetadataLoader,

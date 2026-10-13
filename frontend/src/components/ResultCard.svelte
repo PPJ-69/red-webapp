@@ -11,7 +11,11 @@
   export let current = false;
 
   const dispatch = createEventDispatcher<{
-    "open-item": { item: MediaItem; index: number };
+    "open-item": {
+      item: MediaItem;
+      index: number;
+      opener: HTMLButtonElement;
+    };
   }>();
 
   const fallbackImage =
@@ -20,8 +24,12 @@
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><rect width="640" height="360" fill="#0f172a"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#cbd5e1" font-size="32" font-family="sans-serif">No image</text></svg>',
     );
 
-  function openItem(): void {
-    dispatch("open-item", { item, index });
+  function openItem(event: MouseEvent): void {
+    dispatch("open-item", {
+      item,
+      index,
+      opener: event.currentTarget as HTMLButtonElement,
+    });
   }
 
   $: seen = $sessionStore.seen.includes(item.id);

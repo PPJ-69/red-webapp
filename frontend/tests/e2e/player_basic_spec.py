@@ -107,6 +107,11 @@ class PlayerBasicBrowserTests(unittest.TestCase):
             cls.api_server.should_exit = True
             cls.api_thread.join(timeout=10)
 
+    def open_first_search_result(self, page) -> None:
+        page.goto(f"http://127.0.0.1:{self.web_port}/", wait_until="networkidle")
+        page.get_by_test_id("search-submit").click()
+        page.get_by_test_id("result-card").first.locator("button.card-button").click()
+
     def test_media_player_loads_plays_buffers_and_releases_previous_source(self) -> None:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
@@ -184,7 +189,7 @@ class PlayerBasicBrowserTests(unittest.TestCase):
                     if "/api/stream/" in response.url
                     else None,
                 )
-                page.goto(f"http://127.0.0.1:{self.web_port}/", wait_until="networkidle")
+                self.open_first_search_result(page)
                 video = page.get_by_test_id("media-player")
                 try:
                     page.wait_for_function(
@@ -271,7 +276,9 @@ class PlayerBasicBrowserTests(unittest.TestCase):
                 )
                 expect(page.get_by_test_id("buffering")).to_have_count(0)
 
-                page.get_by_test_id("media-select").select_option("sample-media-two")
+                page.get_by_test_id("result-card").nth(1).locator(
+                    "button.card-button"
+                ).click()
                 try:
                     page.wait_for_function(
                         """() => document.querySelector("video").currentSrc
@@ -290,9 +297,9 @@ class PlayerBasicBrowserTests(unittest.TestCase):
                                   state: document.querySelector(
                                     '[data-testid="player-state"]'
                                   ).textContent,
-                                  selected: document.querySelector(
-                                    '[data-testid="media-select"]'
-                                  ).value,
+                                  heading: document.querySelector(
+                                    '[data-testid="player-overlay"] h2'
+                                  ).textContent,
                                 })"""
                             )
                         )

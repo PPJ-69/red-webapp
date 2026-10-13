@@ -1,66 +1,91 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
 
+  import CreatorPanel from "./components/CreatorPanel.svelte";
+  import FavoritesPanel from "./components/FavoritesPanel.svelte";
+  import Header from "./components/Header.svelte";
+  import InfoPanel from "./components/InfoPanel.svelte";
   import MediaPlayer from "./components/MediaPlayer.svelte";
   import PlayerOverlay from "./components/PlayerOverlay.svelte";
+  import ResultGrid from "./components/ResultGrid.svelte";
   import SearchBar from "./components/SearchBar.svelte";
   import SettingsPanel from "./components/SettingsPanel.svelte";
-  import ResultGrid from "./components/ResultGrid.svelte";
-  import FavoritesPanel from "./components/FavoritesPanel.svelte";
-  import { ArrayPlaybackQueue } from "./services/playbackQueue";
+  import ThumbnailRail from "./components/ThumbnailRail.svelte";
+  import ToastErrorBanner from "./components/ToastErrorBanner.svelte";
+  import type { AppPanel } from "./types/navigation";
+  import { sourceService } from "./services/sourceService";
   import { PlaybackPrefetcher } from "./services/prefetch";
+  import { ResultsPlaybackQueue } from "./services/resultsQueue";
   import { searchContextStore } from "./stores/searchContextStore";
   import { sessionStore } from "./stores/sessionStore";
-  import { sourceService } from "./services/sourceService";
   import type { MediaItem, MediaSource } from "./types/api";
-  import type { QueueItem } from "./services/playbackQueue";
   import type { PlayerEvent, PlayerState, Quality } from "./types/player";
 
-  const playbackQueue = new ArrayPlaybackQueue<QueueItem>(
-    [
-      { id: "sample-media", title: "Sample media" },
-      { id: "sample-media-two", title: "Second sample" },
-    ],
-    "sample-media",
+  const resultsQueue = new ResultsPlaybackQueue<MediaItem>(
     Math.random,
     () => sessionStore.getSnapshot().seen,
   );
   const prefetcher = new PlaybackPrefetcher<MediaSource>();
-  let itemId = playbackQueue.current.id;
-  let currentItem = playbackQueue.current;
+  let searchBar: SearchBar;
   let playerState: PlayerState = "IDLE";
-  let hasPrevious = playbackQueue.hasPrevious;
-  let hasNext = playbackQueue.hasNext;
-  let canRandom = playbackQueue.canRandom;
-  let playerOpen = true;
-  let favoritesOpen = false;
+  let playerOpen = false;
+  let activePanel: AppPanel = "discovery";
+  let hasPrevious = false;
+  let hasNext = false;
+  let canRandom = false;
   let autoplay = false;
   let playerOpener: HTMLButtonElement;
+  let resultOpener: HTMLButtonElement | undefined;
   let savedScrollPosition = 0;
   let prefetchAnnouncement = "";
   let searchAnnouncement = "";
-  let searchError = "";
+  let searchError: unknown = null;
   let displayedResults: MediaItem[] = [];
-  let currentResultId: string | null = null;
+  let currentItem: MediaItem | undefined;
+  let currentItemId: string | null = null;
+  let creatorUsername = "";
   let muted = true;
   let loop = false;
   let volume = 1;
   let speed = 1;
   const quality: Quality = "auto";
+  let lastSearch: {
+    rawQuery: string;
+    order: "trending" | "latest" | "top" | "score";
+    limit: number;
+  } | null = null;
 
-  function updateQueue(item: QueueItem): void {
+  function updateQueue(item: MediaItem): void {
     currentItem = item;
-    itemId = item.id;
-    hasPrevious = playbackQueue.hasPrevious;
-    hasNext = playbackQueue.hasNext;
-    canRandom = playbackQueue.canRandom;
+    currentItemId = item.id;
+    updateQueueCapabilities();
     prefetchAnnouncement = "";
     primeNextSource();
   }
 
+  function updateQueueCapabilities(): void {
+    hasPrevious = resultsQueue.hasPrevious;
+    hasNext = resultsQueue.hasNext;
+    canRandom = resultsQueue.canRandom;
+  }
+
+  function refreshQueue(items: readonly MediaItem[]): void {
+    resultsQueue.replaceItems(items);
+    currentItem = resultsQueue.currentOrUndefined;
+    currentItemId = currentItem?.id ?? null;
+    updateQueueCapabilities();
+    if (currentItem === undefined) {
+      playerOpen = false;
+      prefetcher.cancel();
+    } else {
+      primeNextSource();
+    }
+  }
+
   function primeNextSource(): void {
+    if (!playerOpen || resultsQueue.currentOrUndefined === undefined) return;
     void prefetcher
-      .prepareNext(playbackQueue, (nextId, signal) =>
+      .prepareNext(resultsQueue, (nextId, signal) =>
         sourceService.resolve(nextId, quality, signal),
       )
       .then(() => undefined)
@@ -71,20 +96,18 @@
   }
 
   function moveNext(): void {
-    playbackQueue.next();
+    resultsQueue.next();
   }
 
   function movePrevious(): void {
-    playbackQueue.previous();
+    resultsQueue.previous();
   }
 
   function moveRandom(): void {
-    playbackQueue.random();
+    resultsQueue.random();
   }
 
-  async function closePlayer(
-    event?: CustomEvent<unknown>,
-  ): Promise<void> {
+  async function closePlayer(event?: CustomEvent<unknown>): Promise<void> {
     const detail = event?.detail;
     savedScrollPosition =
       typeof detail === "object" &&
@@ -97,68 +120,122 @@
     prefetcher.cancel();
     await tick();
     window.scrollTo(0, savedScrollPosition);
-    playerOpener?.focus();
+    resultOpener?.focus();
   }
 
-  async function openPlayer(): Promise<void> {
+  async function reopenPlayer(): Promise<void> {
+    if (currentItem === undefined) return;
+    resultOpener = playerOpener;
     playerOpen = true;
     await tick();
     window.scrollTo(0, savedScrollPosition);
     primeNextSource();
   }
 
-  function handlePlayerEvent(
-    event: CustomEvent<{ event: PlayerEvent; state: PlayerState }>,
+  function openItem(
+    event: CustomEvent<{
+      item: MediaItem;
+      index: number;
+      opener: HTMLButtonElement;
+    }>,
   ): void {
-    playerState = event.detail.state;
+    resultOpener = event.detail.opener;
+    savedScrollPosition = window.scrollY;
+    resultsQueue.select(event.detail.item.id);
+    playerOpen = true;
+    primeNextSource();
   }
 
-  async function submitSearch(
-    event: CustomEvent<{
+  async function performSearch(
+    request: {
       rawQuery: string;
       order: "trending" | "latest" | "top" | "score";
       limit: number;
-    }>,
+    },
   ): Promise<void> {
-    searchError = "";
+    lastSearch = request;
+    activePanel = "discovery";
+    playerOpen = false;
+    prefetcher.cancel();
+    searchError = null;
     searchAnnouncement = "Searching…";
-    const succeeded = await searchContextStore.search(event.detail.rawQuery, {
-      order: event.detail.order,
-      limit: event.detail.limit,
+    const succeeded = await searchContextStore.search(request.rawQuery, {
+      order: request.order,
+      limit: request.limit,
     });
     const result = searchContextStore.getSnapshot();
     if (succeeded) {
       searchAnnouncement = `${result.itemsById.size} results loaded.`;
     } else if (result.error !== null) {
       searchAnnouncement = "";
-      searchError = "Search could not be completed. Please try again.";
+      searchError = result.error;
     }
   }
 
-  function handleResultOpen(
-    event: CustomEvent<{ item: { id: string; title: string }; index: number }>,
-  ): void {
-    currentResultId = event.detail.item.id;
-    searchAnnouncement = `Opened ${event.detail.item.title}.`;
+  function submitSearch(
+    event: CustomEvent<{
+      rawQuery: string;
+      order: "trending" | "latest" | "top" | "score";
+      limit: number;
+    }>,
+  ): Promise<void> {
+    return performSearch(event.detail);
   }
 
-  async function handleLoadMore(): Promise<void> {
+  function loadNextPage(): void {
     if (!searchContextStore.getSnapshot().hasMore) return;
-    const succeeded = await searchContextStore.loadNextPage();
-    if (succeeded) {
-      searchAnnouncement = `${searchContextStore.getSnapshot().itemsById.size} results loaded.`;
+    void searchContextStore.loadNextPage().then((succeeded) => {
+      const result = searchContextStore.getSnapshot();
+      if (succeeded) {
+        searchAnnouncement = `${result.itemsById.size} results loaded.`;
+      } else if (result.error !== null) {
+        searchError = result.error;
+      }
+    });
+  }
+
+  function setPanel(panel: AppPanel): void {
+    activePanel = panel;
+    if (panel !== "discovery") {
+      playerOpen = false;
+      prefetcher.cancel();
     }
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent): void {
+    if (
+      !playerOpen ||
+      (event.key !== "g" && event.key !== "G") ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.target instanceof Element &&
+        event.target.closest(
+          "input, textarea, select, [contenteditable]:not([contenteditable='false'])",
+        )
+    ) {
+      return;
+    }
+    event.preventDefault();
+    void closePlayer();
+  }
+
+  function retrySearch(): void {
+    if (lastSearch === null) return;
+    void performSearch(lastSearch);
   }
 
   onMount(() => {
-    const unsubscribeQueue = playbackQueue.subscribe(updateQueue);
+    const unsubscribeQueue = resultsQueue.subscribe(updateQueue);
     const unsubscribeSearch = searchContextStore.subscribe((snapshot) => {
       displayedResults = [...snapshot.itemsById.values()];
+      refreshQueue(displayedResults);
     });
-    updateQueue(playbackQueue.current);
+    window.addEventListener("keydown", handleWindowKeydown);
     return () => {
       unsubscribeQueue();
       unsubscribeSearch();
+      window.removeEventListener("keydown", handleWindowKeydown);
       prefetcher.cancel();
       searchContextStore.discard();
     };
@@ -170,56 +247,47 @@
 </svelte:head>
 
 <main>
-  <h1>Stream-First Media Browser</h1>
-  <SearchBar on:submit={submitSearch} />
-  <SettingsPanel />
-  <button
-    type="button"
-    data-testid="toggle-favorites"
-    aria-expanded={favoritesOpen}
-    on:click={() => (favoritesOpen = !favoritesOpen)}
-  >{favoritesOpen ? "Hide favorites" : "Show favorites"}</button>
-  <FavoritesPanel open={favoritesOpen} />
-  <p data-testid="search-status" role="status" aria-live="polite">
-    {searchAnnouncement}
-  </p>
-  {#if searchError}
-    <p data-testid="search-error" role="alert">{searchError}</p>
+  <Header active={activePanel} on:navigate={(event) => setPanel(event.detail.panel)} />
+  <ToastErrorBanner
+    error={searchError}
+    on:dismiss={() => (searchError = null)}
+    on:retry={retrySearch}
+  />
+
+  {#if activePanel === "discovery"}
+    <SearchBar bind:this={searchBar} on:submit={submitSearch} />
+    <p data-testid="search-status" role="status" aria-live="polite">
+      {searchAnnouncement}
+    </p>
+    {#if displayedResults.length > 0 || searchContextStore.getSnapshot().loadingInitial || searchContextStore.getSnapshot().loadingMore}
+      <ResultGrid
+        items={displayedResults}
+        {currentItemId}
+        loading={searchContextStore.getSnapshot().loadingMore}
+        hasMore={searchContextStore.getSnapshot().hasMore}
+        on:open-item={openItem}
+        on:load={loadNextPage}
+      />
+    {:else if !searchContextStore.getSnapshot().loadingInitial}
+      <p data-testid="discovery-empty">Search for media to start browsing.</p>
+    {/if}
+    {#if currentItem && !playerOpen}
+      <button
+        type="button"
+        class="open-player"
+        data-testid="open-player"
+        bind:this={playerOpener}
+        aria-expanded="false"
+        on:click={reopenPlayer}
+      >Open selected item</button>
+    {/if}
+  {:else if activePanel === "favorites"}
+    <FavoritesPanel open={true} />
+  {:else}
+    <SettingsPanel />
   {/if}
-  {#if displayedResults.length > 0 || searchContextStore.getSnapshot().loadingInitial || searchContextStore.getSnapshot().loadingMore}
-    <ResultGrid
-      items={displayedResults}
-      currentItemId={currentResultId}
-      loading={searchContextStore.getSnapshot().loadingMore}
-      hasMore={searchContextStore.getSnapshot().hasMore}
-      on:open-item={handleResultOpen}
-      on:load={handleLoadMore}
-    />
-  {/if}
-  <label for="item">Test media</label>
-  <select
-    id="item"
-    bind:value={itemId}
-    data-testid="media-select"
-    on:change={() => playbackQueue.select(itemId)}
-  >
-    {#each playbackQueue.items as queueItem}
-      <option value={queueItem.id}>{queueItem.title}</option>
-    {/each}
-  </select>
-  <label class="autoplay-setting">
-    <input type="checkbox" bind:checked={autoplay} data-testid="autoplay-setting" />
-    Play next automatically
-  </label>
-  <button
-    type="button"
-    data-testid="open-player"
-    bind:this={playerOpener}
-    aria-expanded={playerOpen}
-    disabled={playerOpen}
-    on:click={openPlayer}
-  >Open player</button>
-  {#if playerOpen}
+
+  {#if playerOpen && currentItem}
     <PlayerOverlay
       item={currentItem}
       {hasPrevious}
@@ -231,7 +299,7 @@
       on:close={closePlayer}
     >
       <MediaPlayer
-        {itemId}
+        itemId={currentItem.id}
         {autoplay}
         {hasNext}
         bind:muted
@@ -240,18 +308,47 @@
         bind:speed
         {quality}
         takePrefetchedSource={(id) => prefetcher.take(id)}
-        on:playerEvent={handlePlayerEvent}
+        on:playerEvent={(event) => (playerState = event.detail.state)}
         on:next={moveNext}
         on:previous={movePrevious}
         on:skip={moveNext}
         on:close={closePlayer}
       />
+      <ThumbnailRail
+        items={resultsQueue.items}
+        currentItemId={currentItem.id}
+        on:select={(event) => resultsQueue.select(event.detail.id)}
+      />
+      <InfoPanel
+        item={currentItem}
+        on:creator={(event) => (creatorUsername = event.detail.creator.username)}
+        on:tag={(event) => {
+          activePanel = "discovery";
+          searchBar.searchTag(event.detail.tag);
+        }}
+      />
+      {#if creatorUsername}
+        <CreatorPanel
+          username={creatorUsername}
+          on:search={(event) => {
+            creatorUsername = "";
+            activePanel = "discovery";
+            searchBar.searchCreator(event.detail.username);
+          }}
+          on:close={() => (creatorUsername = "")}
+        />
+      {/if}
     </PlayerOverlay>
   {/if}
+
   <p data-testid="prefetch-status" role="status" aria-live="polite">
     {prefetchAnnouncement}
   </p>
   <p data-testid="player-state" aria-live="polite">{playerState}</p>
+  <label class="autoplay-setting">
+    <input type="checkbox" bind:checked={autoplay} data-testid="autoplay-setting" />
+    Play next automatically
+  </label>
 </main>
 
 <style>
@@ -259,36 +356,31 @@
     display: grid;
     gap: 1rem;
     margin: 2rem auto;
-    max-width: 58rem;
+    max-width: 72rem;
     padding: 0 1.25rem;
-  }
-
-  h1 {
-    font-size: clamp(2rem, 6vw, 3.5rem);
-    line-height: 1.1;
-  }
-
-  label {
-    color: #cbd5e1;
   }
 
   .autoplay-setting {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    color: #cbd5e1;
   }
 
-  select {
+  .open-player {
     justify-self: start;
-    border: 1px solid #475569;
-    border-radius: 0.4rem;
+    min-height: 2.5rem;
+    border: 1px solid #64748b;
+    border-radius: 0.375rem;
     background: #1f2937;
     color: inherit;
+    cursor: pointer;
     font: inherit;
-    padding: 0.55rem 0.8rem;
+    padding: 0.4rem 0.7rem;
   }
 
-  [data-testid="player-state"] {
-    color: #cbd5e1;
+  .open-player:focus-visible {
+    outline: 3px solid #38bdf8;
+    outline-offset: 2px;
   }
 </style>

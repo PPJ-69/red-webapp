@@ -37,6 +37,14 @@
 
   $: parsed = parseSearchQuery(rawQuery);
 
+  export function searchCreator(username: string): void {
+    runSearch(`@${username}`, order);
+  }
+
+  export function searchTag(tag: string): void {
+    runSearch(`#${tag}`, order);
+  }
+
   function partialTag(value: string): string {
     const token = value.trim().split(/\s+/u).at(-1) ?? "";
     return token.startsWith("#") ? token.slice(1) : token;

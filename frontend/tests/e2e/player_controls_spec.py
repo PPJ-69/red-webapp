@@ -66,10 +66,7 @@ class PlayerControlsBrowserTests(PlayerBasicBrowserTests):
                 with urlopen(upload, timeout=5) as response:
                     self.assertEqual(response.status, 200)
 
-                page.goto(
-                    f"http://127.0.0.1:{self.web_port}/",
-                    wait_until="networkidle",
-                )
+                self.open_first_search_result(page)
                 video = page.get_by_test_id("media-player")
                 page.wait_for_function(
                     """() => {

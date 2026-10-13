@@ -12,7 +12,13 @@ from backend.app.api.stream import router as stream_router
 from backend.app.config import AppEnvironment, Settings
 from backend.app.domain.enums import ErrorCategory
 from backend.app.domain.errors import ApplicationError, register_exception_handlers
-from backend.app.domain.models import Creator, InternalSourceTarget, MediaItem
+from backend.app.domain.models import (
+    Creator,
+    InternalSourceTarget,
+    MediaItem,
+    SearchQuery,
+    SearchResult,
+)
 from backend.app.observability.logging import install_request_context
 from backend.app.observability.metrics import MetricsRegistry
 from backend.app.services.media_resolver import MediaResolver
@@ -22,7 +28,18 @@ from backend.tests.fixtures.fake_cdn import FakeCDN, FakeCDNFault
 
 
 class _PocProvider(FakeMediaProvider):
-    _media_ids = ("sample-media", "sample-media-two", "sample-media-failure")
+    _media_ids = ("sample-media", "sample-media-two")
+
+    async def search(self, query: SearchQuery) -> SearchResult:
+        start = (query.page - 1) * query.limit
+        page_ids = self._media_ids[start : start + query.limit]
+        return SearchResult(
+            items=[await self.get_media(media_id) for media_id in page_ids],
+            page=query.page,
+            limit=query.limit,
+            hasMore=start + len(page_ids) < len(self._media_ids),
+            total=len(self._media_ids),
+        )
 
     async def get_media(self, media_id: str) -> MediaItem:
         if media_id not in self._media_ids:
@@ -32,7 +49,6 @@ class _PocProvider(FakeMediaProvider):
             title={
                 "sample-media": "Sample media",
                 "sample-media-two": "Second sample",
-                "sample-media-failure": "Failure retry sample",
             }[media_id],
             creator=Creator(id="poc-creator", username="poc"),
             duration=12.5,

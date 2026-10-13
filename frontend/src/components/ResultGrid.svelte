@@ -12,7 +12,11 @@
   export let sentinelText = "Loading more results…";
 
   const dispatch = createEventDispatcher<{
-    "open-item": { item: MediaItem; index: number };
+    "open-item": {
+      item: MediaItem;
+      index: number;
+      opener: HTMLButtonElement;
+    };
     load: undefined;
   }>();
 
@@ -21,7 +25,13 @@
 
   $: filteredItems = sanitizeMediaItems(items);
 
-  function handleOpen(event: CustomEvent<{ item: MediaItem; index: number }>): void {
+  function handleOpen(
+    event: CustomEvent<{
+      item: MediaItem;
+      index: number;
+      opener: HTMLButtonElement;
+    }>,
+  ): void {
     dispatch("open-item", event.detail);
   }
 

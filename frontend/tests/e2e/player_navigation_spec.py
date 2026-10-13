@@ -78,10 +78,7 @@ class PlayerNavigationBrowserTests(PlayerBasicBrowserTests):
                         else None
                     ),
                 )
-                page.goto(
-                    f"http://127.0.0.1:{self.web_port}/",
-                    wait_until="networkidle",
-                )
+                self.open_first_search_result(page)
                 video = page.get_by_test_id("media-player")
                 def wait_for_item(media_id: str) -> None:
                     page.wait_for_function(
@@ -201,9 +198,12 @@ class PlayerNavigationBrowserTests(PlayerBasicBrowserTests):
 
                 page.get_by_test_id("close-player").click()
                 expect(page.get_by_test_id("media-player")).to_have_count(0)
-                opener = page.get_by_test_id("open-player")
+                opener = page.get_by_test_id("result-card").first.locator(
+                    "button.card-button"
+                )
                 expect(opener).to_be_focused()
-                opener.click()
+                reopen = page.get_by_test_id("open-player")
+                reopen.click()
                 expect(page.get_by_test_id("media-player")).to_be_visible()
                 expect(page.get_by_test_id("player-overlay")).to_contain_text(
                     "Second sample"

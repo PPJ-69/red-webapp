@@ -180,6 +180,11 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
             cls.api_server.should_exit = True
             cls.api_thread.join(timeout=10)
 
+    def open_first_search_result(self, page) -> None:
+        page.goto(f"http://127.0.0.1:{self.web_port}/", wait_until="networkidle")
+        page.get_by_test_id("search-submit").click()
+        page.get_by_test_id("result-card").first.locator("button.card-button").click()
+
     def test_expired_auth_resolves_once_then_loads_source(self) -> None:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
@@ -209,7 +214,7 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                         route.continue_()
 
                 page.route("**/api/media/sample-media/source*", resolve_source)
-                page.goto(f"http://127.0.0.1:{self.web_port}/", wait_until="networkidle")
+                self.open_first_search_result(page)
                 page.wait_for_function(
                     """() => document.querySelector("video").src
                       .includes("/api/stream/sample-media")"""
@@ -232,7 +237,7 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                         body=_error_envelope("not_found", "Missing media."),
                     ),
                 )
-                page.goto(f"http://127.0.0.1:{self.web_port}/", wait_until="networkidle")
+                self.open_first_search_result(page)
                 expect(page.get_by_role("heading", name="Unavailable")).to_be_visible()
                 expect(page.get_by_test_id("retry")).to_have_count(0)
                 expect(page.get_by_test_id("skip")).to_be_visible()
@@ -268,7 +273,7 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                         route.continue_()
 
                 page.route("**/api/media/sample-media/source*", resolve_source)
-                page.goto(f"http://127.0.0.1:{self.web_port}/", wait_until="networkidle")
+                self.open_first_search_result(page)
                 expect(page.get_by_test_id("player-error")).to_contain_text(
                     "Wait 7 seconds before retrying."
                 )
@@ -288,7 +293,7 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
             browser = playwright.chromium.launch()
             try:
                 page = browser.new_page()
-                page.goto(f"http://127.0.0.1:{self.web_port}/", wait_until="networkidle")
+                self.open_first_search_result(page)
                 page.wait_for_function(
                     "document.querySelector('video').readyState >= 1"
                 )
@@ -298,7 +303,9 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                       await fetch("/__poc/fault?fault=not_found", { method: "POST" });
                     }"""
                 )
-                page.get_by_test_id("media-select").select_option("sample-media-two")
+                page.get_by_test_id("result-card").nth(1).locator(
+                    "button.card-button"
+                ).click()
                 expect(page.get_by_test_id("player-error")).to_be_visible()
                 self.assertIn(
                     "Unavailable",
@@ -324,7 +331,9 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                       await fetch("/__poc/fault?fault=clear", { method: "POST" });
                     }"""
                 )
-                page.get_by_test_id("media-select").select_option("sample-media")
+                page.get_by_test_id("result-card").first.locator(
+                    "button.card-button"
+                ).click()
                 expect(page.get_by_test_id("player-state")).to_have_text("PAUSED")
 
                 page.evaluate(
@@ -332,7 +341,9 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                       await fetch("/__poc/fault?fault=rate_limited", { method: "POST" });
                     }"""
                 )
-                page.get_by_test_id("media-select").select_option("sample-media-two")
+                page.get_by_test_id("result-card").nth(1).locator(
+                    "button.card-button"
+                ).click()
                 expect(page.get_by_test_id("player-error")).to_contain_text(
                     "rate limited"
                 )

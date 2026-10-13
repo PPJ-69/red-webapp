@@ -80,12 +80,10 @@ class SearchBarBrowserTests(PlayerBasicBrowserTests):
                         }
                     ],
                 )
-                video = page.get_by_test_id("media-player")
-                video.evaluate("element => element.pause()")
                 query.focus()
                 query.press("Space")
                 expect(query).to_have_value("cats #funny @alice ")
-                self.assertTrue(video.evaluate("element => element.paused"))
+                expect(page.get_by_test_id("media-player")).to_have_count(0)
             finally:
                 browser.close()
 
