@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 from backend.app.api.media import router as media_router
+from backend.app.api.search import router as search_router
 from backend.app.api.stream import router as stream_router
 from backend.app.config import AppEnvironment, Settings
 from backend.app.domain.enums import ErrorCategory
@@ -113,6 +114,7 @@ def create_poc_app(cdn: FakeCDN) -> FastAPI:
     app.state.media_resolver = MediaResolver(app.state.upstream_provider)
     app.state.stream_transport = transport
     app.include_router(media_router)
+    app.include_router(search_router)
     app.include_router(stream_router)
 
     @app.post("/__poc/fault")
