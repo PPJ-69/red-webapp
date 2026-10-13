@@ -5,7 +5,7 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **24 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **25 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
@@ -39,6 +39,7 @@
 - **M4-C02:** Added typed source resolution with safe playback URL validation, cancellable native MediaPlayer source lifecycle, loading/buffering overlays, the temporary player shell, and Chromium E2E using the fake provider/CDN. The client binds browser `fetch` correctly; stale `emptied` events during item switches no longer reset the new source.
 - **M4-C03:** Added a typed playback-recovery decision table, quality/auth retry limits, item-level unavailable/rate-limit/error states, Retry/Skip/Open actions, and error-envelope diagnosis for failed relay playback via a one-byte Range request. Added one-shot expired-signature fake-CDN behavior for browser coverage; forbidden sources remain terminal with no retry or bypass.
 - **M4-C04:** Added accessible native playback controls, keyboard shortcut routing with focus-aware typing suppression, keyboard help, and emitted player intent events. Fullscreen covers the player section so controls remain available while fullscreen. Queue and favorite behavior remain unwired.
+- **M5-C03:** Added the responsive ResultGrid/ResultCard display layer with lazy thumbnails, duration/creator metadata, a current-item indicator, and a single-flight IntersectionObserver sentinel. Invalid items are filtered before render so a single bad payload cannot block the grid, and the grid emits only display-level open events without wiring player/favorite/seen behavior. Targeted grid/context tests pass.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -46,7 +47,7 @@
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
-- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll (current) · C04 RAM stores · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
+- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll (done) · C04 RAM stores (current) · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
 Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
@@ -114,8 +115,8 @@ O5 is resolved; other gates remain open and use their listed defaults until reso
 Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkable URLs).
 
 ## Last Handoff
-- **Date:** 2026-10-08
-- **Done:** Completed M5-C02: accessible search and filter controls, debounced cancellable tag suggestions, parsed chip previews, and request wiring to the RAM-only search context.
-- **Next:** M5-C03 responsive result cards/grid and infinite scroll. Keep player queue integration, favorite, and seen behavior out of scope.
+- **Date:** 2026-10-13
+- **Done:** Completed M5-C03: responsive result grid/cards with lazy thumbnails, current-item state via `aria-current`, invalid-item sanitization, and a guarded infinite-scroll sentinel that only triggers load when the grid is idle and more data exists.
+- **Next:** M5-C04: implement the RAM-only store interface, session/settings stores, and the Privacy Mode indicator without persisting browser state or wiring favorites/seen/history.
 - **Watch:** Live-provider use remains gated by O6. Backend sessions remain conditional pending O1/O10; preserve RAM-only metadata and the no-browser-storage policy.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

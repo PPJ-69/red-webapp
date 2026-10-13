@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatDuration,
   sanitizeMediaItems,
+  shouldLoadMore,
 } from "../../src/utils/resultGrid";
 
 describe("result grid utils", () => {
@@ -26,5 +27,11 @@ describe("result grid utils", () => {
       { id: "ok", title: "Valid item", duration: 42 },
       { id: "also-ok", title: "Another" },
     ]);
+  });
+
+  it("allows loading only when there is more data and the grid is idle", () => {
+    expect(shouldLoadMore({ hasMore: true, loading: false })).toBe(true);
+    expect(shouldLoadMore({ hasMore: true, loading: true })).toBe(false);
+    expect(shouldLoadMore({ hasMore: false, loading: false })).toBe(false);
   });
 });

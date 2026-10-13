@@ -29,3 +29,13 @@ export function isRenderableMediaItem(value: unknown): value is MediaItem {
 export function sanitizeMediaItems(items: readonly unknown[]): MediaItem[] {
   return items.filter(isRenderableMediaItem);
 }
+
+export function shouldLoadMore({
+  hasMore,
+  loading,
+}: {
+  hasMore: boolean;
+  loading: boolean;
+}): boolean {
+  return hasMore && !loading;
+}

@@ -89,3 +89,4 @@
 - **C03-D1 — Display-only grid:** Result cards render item metadata and lazy thumbnails only; any player selection, favorite toggle, or seen-state update remains intentionally outside this chunk and is not wired in the grid or app shell.
 - **C03-D2 — Sentinel behavior:** A single IntersectionObserver sentinel triggers the next-page event only when the grid is not already loading and there is more data to load; stale or superseded requests are ignored by the existing search context lifecycle.
 - **C03-D3 — Resilience:** Invalid or malformed items are dropped before render so one bad payload never blocks the rest of the grid. Current-item state is conveyed by text plus `aria-current`, never color alone.
+- **C03-D4 — Deferred state transitions:** The grid never mutates queue/session state; it emits only display-level open events so later chunks can connect stateful player and session logic without contaminating this chunk's contract.

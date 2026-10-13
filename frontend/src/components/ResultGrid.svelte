@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
 
   import type { MediaItem } from "../types/api";
-  import { sanitizeMediaItems } from "../utils/resultGrid";
+  import { sanitizeMediaItems, shouldLoadMore } from "../utils/resultGrid";
   import ResultCard from "./ResultCard.svelte";
 
   export let items: readonly MediaItem[] = [];
@@ -26,17 +26,19 @@
   }
 
   function handleLoad(): void {
-    if (loading || !hasMore) return;
+    if (!shouldLoadMore({ hasMore, loading })) return;
     dispatch("load");
   }
 
-  $: {
-    if (observer) {
-      observer.disconnect();
-      observer = undefined;
-    }
+  function cleanupObserver(): void {
+    observer?.disconnect();
+    observer = undefined;
+  }
 
-    if (typeof IntersectionObserver !== "undefined" && sentinel && hasMore && !loading) {
+  $: {
+    cleanupObserver();
+
+    if (typeof IntersectionObserver !== "undefined" && sentinel && shouldLoadMore({ hasMore, loading })) {
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
@@ -47,6 +49,10 @@
       observer.observe(sentinel);
     }
   }
+
+  onDestroy(() => {
+    cleanupObserver();
+  });
 </script>
 
 {#if filteredItems.length === 0 && !loading}
