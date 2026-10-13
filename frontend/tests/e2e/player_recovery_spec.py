@@ -238,7 +238,11 @@ class PlayerRecoveryBrowserTests(unittest.TestCase):
                     ),
                 )
                 self.open_first_search_result(page)
-                expect(page.get_by_role("heading", name="Unavailable")).to_be_visible()
+                expect(
+                    page.get_by_test_id("player-error").get_by_role(
+                        "heading", name="Unavailable"
+                    )
+                ).to_be_visible()
                 expect(page.get_by_test_id("retry")).to_have_count(0)
                 expect(page.get_by_test_id("skip")).to_be_visible()
                 expect(page.get_by_test_id("open")).to_have_count(0)

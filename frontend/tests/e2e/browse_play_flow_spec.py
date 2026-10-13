@@ -141,7 +141,11 @@ class BrowsePlayFlowBrowserTests(PlayerBasicBrowserTests):
                 page.get_by_test_id("result-card").nth(2).locator(
                     "button.card-button"
                 ).click()
-                expect(page.get_by_role("heading", name="Unavailable")).to_be_visible()
+                expect(
+                    page.get_by_test_id("player-error").get_by_role(
+                        "heading", name="Unavailable"
+                    )
+                ).to_be_visible()
                 page.get_by_test_id("close-player").click()
                 expect(page.get_by_test_id("result-grid")).to_be_visible()
                 self.assertEqual(page.evaluate("window.scrollY"), saved_position)

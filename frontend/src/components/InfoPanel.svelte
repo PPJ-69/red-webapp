@@ -16,7 +16,7 @@
 </script>
 
 <section aria-label="Media information" data-testid="media-info">
-  <h2>{item.title}</h2>
+  <h3>Media details</h3>
   {#if item.description}
     <p>{item.description}</p>
   {/if}
@@ -71,7 +71,7 @@
     background: #0f172a;
   }
 
-  h2,
+  h3,
   p {
     margin: 0;
   }
