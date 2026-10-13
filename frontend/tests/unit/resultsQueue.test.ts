@@ -53,6 +53,7 @@ describe("results playback queue", () => {
 
     expect(queue.random().id).toBe("three");
     seen.add("three");
+    seen.add("one");
     expect(queue.random().id).toBe("two");
   });
 
