@@ -4,11 +4,12 @@
   import MediaPlayer from "./components/MediaPlayer.svelte";
   import PlayerOverlay from "./components/PlayerOverlay.svelte";
   import SearchBar from "./components/SearchBar.svelte";
+  import ResultGrid from "./components/ResultGrid.svelte";
   import { ArrayPlaybackQueue } from "./services/playbackQueue";
   import { PlaybackPrefetcher } from "./services/prefetch";
   import { searchContextStore } from "./stores/searchContextStore";
   import { sourceService } from "./services/sourceService";
-  import type { MediaSource } from "./types/api";
+  import type { MediaItem, MediaSource } from "./types/api";
   import type { QueueItem } from "./services/playbackQueue";
   import type { PlayerEvent, PlayerState, Quality } from "./types/player";
 
@@ -33,6 +34,8 @@
   let prefetchAnnouncement = "";
   let searchAnnouncement = "";
   let searchError = "";
+  let displayedResults: MediaItem[] = [];
+  let currentResultId: string | null = null;
   let muted = true;
   let loop = false;
   let volume = 1;
@@ -126,11 +129,30 @@
     }
   }
 
+  function handleResultOpen(
+    event: CustomEvent<{ item: { id: string; title: string }; index: number }>,
+  ): void {
+    currentResultId = event.detail.item.id;
+    searchAnnouncement = `Opened ${event.detail.item.title}.`;
+  }
+
+  async function handleLoadMore(): Promise<void> {
+    if (!searchContextStore.getSnapshot().hasMore) return;
+    const succeeded = await searchContextStore.loadNextPage();
+    if (succeeded) {
+      searchAnnouncement = `${searchContextStore.getSnapshot().itemsById.size} results loaded.`;
+    }
+  }
+
   onMount(() => {
-    const unsubscribe = playbackQueue.subscribe(updateQueue);
+    const unsubscribeQueue = playbackQueue.subscribe(updateQueue);
+    const unsubscribeSearch = searchContextStore.subscribe((snapshot) => {
+      displayedResults = [...snapshot.itemsById.values()];
+    });
     updateQueue(playbackQueue.current);
     return () => {
-      unsubscribe();
+      unsubscribeQueue();
+      unsubscribeSearch();
       prefetcher.cancel();
       searchContextStore.discard();
     };
@@ -149,6 +171,16 @@
   </p>
   {#if searchError}
     <p data-testid="search-error" role="alert">{searchError}</p>
+  {/if}
+  {#if displayedResults.length > 0 || searchContextStore.getSnapshot().loadingInitial || searchContextStore.getSnapshot().loadingMore}
+    <ResultGrid
+      items={displayedResults}
+      currentItemId={currentResultId}
+      loading={searchContextStore.getSnapshot().loadingMore}
+      hasMore={searchContextStore.getSnapshot().hasMore}
+      on:open-item={handleResultOpen}
+      on:load={handleLoadMore}
+    />
   {/if}
   <label for="item">Test media</label>
   <select

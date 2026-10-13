@@ -83,3 +83,9 @@
 
 - **C02-D1 — Search filters:** Search order is limited to trending/latest/top/score; page size accepts integers 1–100 and defaults to 20.
 - **C02-D2 — Tag suggestions:** Autocomplete starts at two characters after a 250 ms debounce. New input aborts and supersedes older work; malformed API responses and non-cancellation failures are surfaced to the user.
+
+# M5-C03 Result Grid Contracts
+
+- **C03-D1 — Display-only grid:** Result cards render item metadata and lazy thumbnails only; any player selection, favorite toggle, or seen-state update remains intentionally outside this chunk and is not wired in the grid or app shell.
+- **C03-D2 — Sentinel behavior:** A single IntersectionObserver sentinel triggers the next-page event only when the grid is not already loading and there is more data to load; stale or superseded requests are ignored by the existing search context lifecycle.
+- **C03-D3 — Resilience:** Invalid or malformed items are dropped before render so one bad payload never blocks the rest of the grid. Current-item state is conveyed by text plus `aria-current`, never color alone.

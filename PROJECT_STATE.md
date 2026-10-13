@@ -12,10 +12,10 @@
 **M5: Discovery UI & Session Features**
 
 ## Current Chunk
-**M5-C03: ResultGrid, ResultCard, infinite scroll**
+**M5-C04: Store interface, in-RAM session and settings stores, Privacy Mode indicator**
 - Status: pending.
-- Depends on: M5-C01.
-- Handoff: implement responsive result grid/cards and a one-at-a-time infinite-scroll sentinel; do not wire player selection, favorite, or seen behavior.
+- Depends on: M5-C03.
+- Handoff: implement in-memory store interfaces, session/settings stores, and the privacy indicator without persisting browser state or wiring favorites/seen/history.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -89,6 +89,7 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M4-C05:** Added an array-backed in-memory queue with previous/next/random, seen-aware selection and change notifications; a player overlay with navigation/close; and one-item source-descriptor prefetch that never requests non-current media bytes. Skip and keyboard navigation now use the queue; ended behavior honors loop/autoplay/queue bounds, and close restores scroll position and opener focus. All 127 frontend unit tests pass; type-check, build, storage policy check, and all seven fake-provider lifecycle/recovery/controls/navigation Chromium tests pass.
 - **M5-C01:** Added a typed query parser with creator/tag chips and mode normalization, shared fixtures checked against the backend normalizer, and an in-memory search context with page loading, deduplication, cancellation/supersession, and failure-safe retention of loaded items. Frontend type-check, all 143 frontend unit tests, production build, storage policy check, the backend suite, and shared-vector parity tests pass.
 - **M5-C02:** Added accessible SearchBar and SearchFilters components, normalized chip previews, trending/latest/top/score ordering, 1–100 page size, and tag suggestions with a 250 ms debounce, two-character minimum, active-request cancellation, and surfaced errors. Wired search submissions through the M5-C01 context; tests verify serialized query parameters and that typing does not trigger player shortcuts. All 148 frontend unit tests, type-check, production build, storage policy check, and the fake-provider browser search test pass.
+- **M5-C03:** Added the responsive ResultGrid/ResultCard display layer with lazy thumbnails, duration/creator metadata, a current-item indicator, and a single-flight IntersectionObserver sentinel. Invalid items are filtered before render so a single bad payload cannot block the grid, and the grid emits only display-level open events without wiring player/favorite/seen behavior. Frontend Svelte check and the targeted grid/search-context tests pass.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
