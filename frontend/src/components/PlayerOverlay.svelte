@@ -13,11 +13,11 @@
     previous: void;
     next: void;
     random: void;
-    close: { scrollPosition: number };
+    close: void;
   }>();
 
   function close(): void {
-    dispatch("close", { scrollPosition: window.scrollY });
+    dispatch("close", undefined);
   }
 
   $: seen = $sessionStore.seen.includes(item.id);

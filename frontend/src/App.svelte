@@ -107,15 +107,7 @@
     resultsQueue.random();
   }
 
-  async function closePlayer(event?: CustomEvent<unknown>): Promise<void> {
-    const detail = event?.detail;
-    savedScrollPosition =
-      typeof detail === "object" &&
-      detail !== null &&
-      "scrollPosition" in detail &&
-      typeof detail.scrollPosition === "number"
-        ? detail.scrollPosition
-        : window.scrollY;
+  async function closePlayer(): Promise<void> {
     playerOpen = false;
     prefetcher.cancel();
     await tick();
