@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from "svelte";
+  import { createEventDispatcher } from "svelte";
 
   import type { MediaItem } from "../types/api";
   import { sanitizeMediaItems, shouldLoadMore } from "../utils/resultGrid";
@@ -20,9 +20,6 @@
     load: undefined;
   }>();
 
-  let sentinel: HTMLDivElement | null = null;
-  let observer: IntersectionObserver | undefined;
-
   $: filteredItems = sanitizeMediaItems(items);
 
   function handleOpen(
@@ -40,29 +37,19 @@
     dispatch("load");
   }
 
-  function cleanupObserver(): void {
-    observer?.disconnect();
-    observer = undefined;
+  function observeSentinel(
+    node: HTMLDivElement,
+  ): { destroy: () => void } | undefined {
+    if (typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) handleLoad();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return { destroy: () => observer.disconnect() };
   }
-
-  $: {
-    cleanupObserver();
-
-    if (typeof IntersectionObserver !== "undefined" && sentinel && shouldLoadMore({ hasMore, loading })) {
-      observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (entry?.isIntersecting) handleLoad();
-        },
-        { rootMargin: "200px" },
-      );
-      observer.observe(sentinel);
-    }
-  }
-
-  onDestroy(() => {
-    cleanupObserver();
-  });
 </script>
 
 {#if filteredItems.length === 0 && !loading}
@@ -90,7 +77,12 @@
 {/if}
 
 {#if hasMore || loading}
-  <div bind:this={sentinel} class="sentinel" data-testid="result-grid-sentinel" aria-live="polite">
+  <div
+    use:observeSentinel
+    class="sentinel"
+    data-testid="result-grid-sentinel"
+    aria-live="polite"
+  >
     {loading ? sentinelText : "Scroll for more results"}
   </div>
 {/if}
