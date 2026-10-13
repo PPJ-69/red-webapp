@@ -6,9 +6,11 @@
   import SearchBar from "./components/SearchBar.svelte";
   import SettingsPanel from "./components/SettingsPanel.svelte";
   import ResultGrid from "./components/ResultGrid.svelte";
+  import FavoritesPanel from "./components/FavoritesPanel.svelte";
   import { ArrayPlaybackQueue } from "./services/playbackQueue";
   import { PlaybackPrefetcher } from "./services/prefetch";
   import { searchContextStore } from "./stores/searchContextStore";
+  import { sessionStore } from "./stores/sessionStore";
   import { sourceService } from "./services/sourceService";
   import type { MediaItem, MediaSource } from "./types/api";
   import type { QueueItem } from "./services/playbackQueue";
@@ -20,6 +22,8 @@
       { id: "sample-media-two", title: "Second sample" },
     ],
     "sample-media",
+    Math.random,
+    () => sessionStore.getSnapshot().seen,
   );
   const prefetcher = new PlaybackPrefetcher<MediaSource>();
   let itemId = playbackQueue.current.id;
@@ -29,6 +33,7 @@
   let hasNext = playbackQueue.hasNext;
   let canRandom = playbackQueue.canRandom;
   let playerOpen = true;
+  let favoritesOpen = false;
   let autoplay = false;
   let playerOpener: HTMLButtonElement;
   let savedScrollPosition = 0;
@@ -168,6 +173,13 @@
   <h1>Stream-First Media Browser</h1>
   <SearchBar on:submit={submitSearch} />
   <SettingsPanel />
+  <button
+    type="button"
+    data-testid="toggle-favorites"
+    aria-expanded={favoritesOpen}
+    on:click={() => (favoritesOpen = !favoritesOpen)}
+  >{favoritesOpen ? "Hide favorites" : "Show favorites"}</button>
+  <FavoritesPanel open={favoritesOpen} />
   <p data-testid="search-status" role="status" aria-live="polite">
     {searchAnnouncement}
   </p>

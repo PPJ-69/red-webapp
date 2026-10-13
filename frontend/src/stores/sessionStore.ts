@@ -1,9 +1,10 @@
 import { createMemoryStore, type Store } from "./storeInterface";
+import type { SearchOrder } from "../types/search";
 
 export type SessionSavedSearch = {
   id: string;
   query: string;
-  order?: string | null;
+  order: SearchOrder | null;
   createdAt: number;
 };
 
@@ -42,6 +43,15 @@ function nextUniqueList(values: readonly string[], item: string): string[] {
   return [...values, item];
 }
 
+function isSearchOrder(value: string | null | undefined): value is SearchOrder {
+  return (
+    value === "trending" ||
+    value === "latest" ||
+    value === "top" ||
+    value === "score"
+  );
+}
+
 export function createSessionStore(
   initialSnapshot: Partial<SessionSnapshot> = {},
 ): SessionStore {
@@ -55,6 +65,7 @@ export function createSessionStore(
   };
 
   const store = createMemoryStore(base);
+  let nextSavedSearchId = 0;
 
   function updateSnapshot(mutator: (snapshot: SessionSnapshot) => SessionSnapshot): void {
     const next = mutator(store.getSnapshot());
@@ -87,7 +98,7 @@ export function createSessionStore(
     hasSeen(id: string): boolean {
       return store.getSnapshot().seen.includes(id);
     },
-    addSearchHistory(query: string, order?: string | null): void {
+    addSearchHistory(query: string, _order?: string | null): void {
       const trimmed = query.trim();
       if (!trimmed) return;
       updateSnapshot((snapshot) => {
@@ -101,21 +112,33 @@ export function createSessionStore(
     saveSearch(query: string, order?: string | null): void {
       const trimmed = query.trim();
       if (!trimmed) return;
+      const normalizedOrder = isSearchOrder(order) ? order : null;
       updateSnapshot((snapshot) => {
         const saved = snapshot.savedSearches.find((entry) => entry.query === trimmed);
         if (saved) {
           return {
             ...snapshot,
             savedSearches: snapshot.savedSearches.map((entry) =>
-              entry.id === saved.id ? { ...entry, order: order ?? entry.order, createdAt: Date.now() } : entry,
+              entry.id === saved.id
+                ? {
+                    ...entry,
+                    order: normalizedOrder ?? entry.order,
+                    createdAt: Date.now(),
+                  }
+                : entry,
             ),
           };
         }
 
+        const existingIds = new Set(snapshot.savedSearches.map(({ id }) => id));
+        let id = `saved-${Date.now()}-${nextSavedSearchId++}`;
+        while (existingIds.has(id)) {
+          id = `saved-${Date.now()}-${nextSavedSearchId++}`;
+        }
         const newEntry: SessionSavedSearch = {
-          id: `${trimmed.toLowerCase()}-${Date.now()}`,
+          id,
           query: trimmed,
-          order: order ?? null,
+          order: normalizedOrder,
           createdAt: Date.now(),
         };
         return { ...snapshot, savedSearches: [newEntry, ...snapshot.savedSearches].slice(0, 25) };

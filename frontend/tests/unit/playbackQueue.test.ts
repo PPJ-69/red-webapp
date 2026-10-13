@@ -34,16 +34,18 @@ describe("array playback queue", () => {
   });
 
   it("chooses unseen items first and excludes the current item", () => {
-    const randomValues = [0, 0.99];
+    const randomValues = [0.99, 0.99];
+    const seen = new Set<string>();
     const queue = new ArrayPlaybackQueue(
       items,
       "one",
       () => randomValues.shift() ?? 0,
-      ["two"],
+      () => seen,
     );
 
     expect(queue.random().id).toBe("three");
-    expect(queue.random().id).toBe("two");
+    seen.add("two");
+    expect(queue.random().id).toBe("one");
   });
 
   it("falls back to any other item once all items have been seen", () => {

@@ -96,3 +96,9 @@
 - **C04-D1 — Virtual Store interface:** A frontend `Store` abstraction wraps Svelte's readable/writable contract and exposes `getSnapshot`, `set`, `update`, and `reset` so a later account-mode backend session can implement the same interface without changing consumers.
 - **C04-D2 — RAM-only session state:** Favorites, seen IDs, search history, and saved searches live in in-memory snapshots only. They are recreated on reload and never written to browser storage or any server-side persistence layer.
 - **C04-D3 — Privacy mode lock:** The settings store default enforces `privacyMode: true` and `privacyModeLocked: true`; the UI indicator shows "Locked ON" and ignores attempts to disable it while preserving a consistent, app-local state contract.
+
+# M5-C05 Session Feature Contracts
+
+- **C05-D1 — Playback-based seen state:** An item becomes seen when the native player emits `playing`; selecting or navigating to an item alone does not mark it seen. Random navigation reads the session store's current seen IDs.
+- **C05-D2 — Metadata/playback boundary:** `GET /api/media/{id}` returns canonical metadata without source descriptors. Playback sources are resolved only through `GET /api/media/{id}/source`.
+- **C05-D3 — Ephemeral favorites hydration:** The session store keeps favorite IDs only. The Favorites panel fetches canonical metadata when opened and retains it only in frontend memory; no browser storage or backend session is introduced.

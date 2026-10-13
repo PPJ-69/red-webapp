@@ -1,6 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import type { QueueItem } from "../services/playbackQueue";
+  import FavoriteButton from "./FavoriteButton.svelte";
+  import { sessionStore } from "../stores/sessionStore";
 
   export let item: QueueItem;
   export let hasPrevious = false;
@@ -17,12 +19,20 @@
   function close(): void {
     dispatch("close", { scrollPosition: window.scrollY });
   }
+
+  $: seen = $sessionStore.seen.includes(item.id);
 </script>
 
 <section class="player-overlay" data-testid="player-overlay" aria-label="Media viewer">
   <header>
     <h2>{item.title}</h2>
     <nav aria-label="Media navigation">
+      <FavoriteButton mediaId={item.id} />
+      {#if seen}
+        <span class="state-indicator" data-testid={`seen-${item.id}`}>
+          <span aria-hidden="true">✓</span> Seen
+        </span>
+      {/if}
       <button
         type="button"
         data-testid="previous-item"
@@ -95,5 +105,15 @@
   button:focus-visible {
     outline: 3px solid #38bdf8;
     outline-offset: 2px;
+  }
+
+  .state-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2rem;
+    border: 1px solid #64748b;
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
   }
 </style>

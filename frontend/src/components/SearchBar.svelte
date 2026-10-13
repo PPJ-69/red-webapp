@@ -10,6 +10,8 @@
     tagSuggestService,
     type TagSuggestService,
   } from "../services/tagSuggest";
+  import { sessionStore } from "../stores/sessionStore";
+  import SavedSearches from "./SavedSearches.svelte";
 
   export let suggestionsService: TagSuggestService = tagSuggestService;
   export let order: SearchOrder = "trending";
@@ -30,6 +32,8 @@
   let suggestionError = "";
   let requestId = 0;
   let input: HTMLInputElement;
+  let lastSubmittedQuery = "";
+  let lastSubmittedOrder: SearchOrder = "trending";
 
   $: parsed = parseSearchQuery(rawQuery);
 
@@ -58,12 +62,30 @@
     event.preventDefault();
     suggestionsService.cancel();
     suggestions = [];
+    runSearch(rawQuery, order);
+  }
+
+  function runSearch(query: string, selectedOrder: SearchOrder): void {
+    suggestionsService.cancel();
+    suggestions = [];
+    rawQuery = query;
+    order = selectedOrder;
+    lastSubmittedQuery = query.trim();
+    lastSubmittedOrder = selectedOrder;
+    sessionStore.addSearchHistory(query, selectedOrder);
     dispatch("submit", {
-      rawQuery,
-      parsed: parseSearchQuery(rawQuery),
-      order,
+      rawQuery: query,
+      parsed: parseSearchQuery(query),
+      order: selectedOrder,
       limit,
     });
+  }
+
+  function selectSavedSearch(event: CustomEvent<{
+    query: string;
+    order: SearchOrder | null;
+  }>): void {
+    runSearch(event.detail.query, event.detail.order ?? "trending");
   }
 
   function chooseSuggestion(value: string): void {
@@ -164,6 +186,32 @@
     }}
   />
 
+  {#if lastSubmittedQuery}
+    <button
+      type="button"
+      data-testid="save-search"
+      on:click={() => sessionStore.saveSearch(lastSubmittedQuery, lastSubmittedOrder)}
+    >Save search</button>
+  {/if}
+
+  {#if $sessionStore.searchHistory.length > 0}
+    <section aria-label="Search history" data-testid="search-history">
+      <h2>Recent searches</h2>
+      <ul>
+        {#each $sessionStore.searchHistory as query (query)}
+          <li>
+            <button
+              type="button"
+              data-testid="history-search"
+              on:click={() => runSearch(query, "trending")}
+            >{query}</button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+  <SavedSearches on:select={selectSavedSearch} />
+
   {#if parsed.chips.length > 0}
     <ul class="query-chips" aria-label="Parsed search filters" data-testid="query-chips">
       {#each parsed.chips as chip}
@@ -261,6 +309,25 @@
   .suggestion-error {
     margin: 0;
     color: #fecaca;
+  }
+
+  section {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   @media (max-width: 36rem) {

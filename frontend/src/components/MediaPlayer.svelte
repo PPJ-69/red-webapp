@@ -29,6 +29,7 @@
   } from "../types/player";
   import type { MediaSource } from "../types/api";
   import { sourceService } from "../services/sourceService";
+  import { sessionStore } from "../stores/sessionStore";
 
   export let itemId: string;
   export let autoplay = false;
@@ -91,6 +92,7 @@
 
   function handleMediaEvent(event: Event): void {
     const eventName = event.type as NativeMediaEventName;
+    if (eventName === "playing") sessionStore.markSeen(itemId);
     if (
       eventName === "timeupdate" ||
       eventName === "durationchange" ||
@@ -357,6 +359,7 @@
         break;
       case "toggle-favorite":
         dispatch("toggleFavorite", undefined);
+        sessionStore.toggleFavorite(itemId);
         break;
       case "close":
         showKeyboardHelp = false;

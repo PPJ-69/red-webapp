@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **26 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **27 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M5: Discovery UI & Session Features**
 
 ## Current Chunk
-**M5-C05: Favorites, seen, random, history, saved searches**
+**M5-C06: App shell integration, results-backed queue, panels**
 - Status: pending.
-- Depends on: M5-C03, M5-C04.
-- Handoff: implement the session-backed favorites/seen/history/search behaviors and keep all state in RAM only.
+- Depends on: M5-C03, M5-C05, M4-C05, M2-C04.
+- Handoff: replace the temporary app mount with the results-backed browse/player flow and panels; preserve session features in RAM.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -41,6 +41,7 @@
 - **M4-C04:** Added accessible native playback controls, keyboard shortcut routing with focus-aware typing suppression, keyboard help, and emitted player intent events. Fullscreen covers the player section so controls remain available while fullscreen. Queue and favorite behavior remain unwired.
 - **M5-C03:** Added the responsive ResultGrid/ResultCard display layer with lazy thumbnails, duration/creator metadata, a current-item indicator, and a single-flight IntersectionObserver sentinel. Invalid items are filtered before render so a single bad payload cannot block the grid, and the grid emits only display-level open events without wiring player/favorite/seen behavior. Targeted grid/context tests pass.
 - **M5-C04:** Added the `Store` abstraction, RAM-only session and settings stores, and a `SettingsPanel` privacy indicator that keeps Privacy Mode locked ON. No browser storage or persistence is used; targeted store tests pass.
+- **M5-C05:** Wired favorites into result cards/player keyboard controls, seen state to native playback start, random navigation to the session seen set, and recent/saved search flows to `SearchBar`. Added on-demand Favorites metadata hydration and the required canonical `GET /api/media/{id}` endpoint; metadata responses omit source descriptors. State remains frontend RAM-only. Backend suite (148 tests), OpenAPI schema drift, frontend storage lint, Python compilation, and whitespace checks pass; frontend TypeScript/unit/browser validation could not run because Node.js is unavailable in the environment.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -48,7 +49,7 @@
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
-- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (current) · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
+- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (done) · C06 app integration (current) · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
 Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
@@ -69,7 +70,7 @@ Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only
 ## Known Issues
 No implementation defects are currently known. Remaining document-level issues:
 1. **Section references don't match.** ARCHITECTURE and PLAN cite requirement sections up to roughly §70 (e.g. the POC gate, error taxonomy, session TTL values, metric names). The uploaded REQUIREMENTS.md has 29 sections and doesn't contain those items. Confirm which document is the source of truth.
-2. **Session conflict.** REQUIREMENTS lists `/api/session*` endpoints (§12) and expired-session cleanup (§19, §27). ARCHITECTURE (O1) and the PLAN default to frontend-only state with backend sessions conditional (M5-C08). Needs explicit resolution before M5.
+2. **Session scope.** REQUIREMENTS lists `/api/session*` endpoints (§12) and expired-session cleanup (§19, §27). O1/O10 and the PLAN default to frontend-only state with backend sessions conditional (M5-C08); M5-C04/C05 follow that default without adding backend session state.
 3. **Repo layout differs.** REQUIREMENTS §25 (`api/providers/streaming/sessions/models`) vs PLAN (`domain/upstream/services/security/observability`). REQUIREMENTS allows changes; confirm the PLAN layout.
 4. **Milestone numbering differs** across docs (REQUIREMENTS M0–M8, ARCHITECTURE M1–M7, PLAN M1–M6). Use PLAN numbering.
 
@@ -92,6 +93,7 @@ No implementation defects are currently known. Remaining document-level issues:
 - **M5-C01:** Added a typed query parser with creator/tag chips and mode normalization, shared fixtures checked against the backend normalizer, and an in-memory search context with page loading, deduplication, cancellation/supersession, and failure-safe retention of loaded items. Frontend type-check, all 143 frontend unit tests, production build, storage policy check, the backend suite, and shared-vector parity tests pass.
 - **M5-C02:** Added accessible SearchBar and SearchFilters components, normalized chip previews, trending/latest/top/score ordering, 1–100 page size, and tag suggestions with a 250 ms debounce, two-character minimum, active-request cancellation, and surfaced errors. Wired search submissions through the M5-C01 context; tests verify serialized query parameters and that typing does not trigger player shortcuts. All 148 frontend unit tests, type-check, production build, storage policy check, and the fake-provider browser search test pass.
 - **M5-C03:** Added the responsive ResultGrid/ResultCard display layer with lazy thumbnails, duration/creator metadata, a current-item indicator, and a single-flight IntersectionObserver sentinel. Invalid items are filtered before render so a single bad payload cannot block the grid, and the grid emits only display-level open events without wiring player/favorite/seen behavior. Frontend Svelte check and the targeted grid/search-context tests pass.
+- **M5-C05:** Added store, hydration, and navigation unit coverage plus Chromium E2E for favorites via button/keyboard, seen state, random navigation, history, and saved searches. Backend tests pass (148), schema drift check passes, and storage API lint passes. Frontend type-check, unit tests, build, and browser E2E remain unverified because Node.js is unavailable in this environment.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
@@ -117,7 +119,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-13
-- **Done:** Completed M5-C04: the `Store` abstraction, a RAM-only session/settings layer, and a locked Privacy Mode indicator with no browser persistence.
-- **Next:** M5-C05: implement favorites, seen state, random/history helpers, and saved-search behavior in the in-memory session store without introducing browser storage or backend sessions.
+- **Done:** Completed M5-C05: favorites/seen/random/history/saved-search behavior with RAM-only state and on-demand metadata hydration.
+- **Next:** M5-C06: integrate discovery results with the player queue and panels; no backend session or persistent browser storage.
 - **Watch:** Live-provider use remains gated by O6. Backend sessions remain conditional pending O1/O10; preserve RAM-only metadata and the no-browser-storage policy.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

@@ -23,14 +23,14 @@ export class ArrayPlaybackQueue<T extends QueueItem>
   implements PlaybackQueue<T>
 {
   private index: number;
-  private readonly seenIds: Set<string>;
+  private readonly initiallySeenIds: Set<string>;
   private readonly listeners = new Set<(item: T) => void>();
 
   constructor(
     private readonly entries: readonly T[],
     initialId: string,
     private readonly randomValue: () => number = Math.random,
-    seenIds: Iterable<string> = [],
+    private readonly seenIds: Iterable<string> | (() => Iterable<string>) = [],
   ) {
     if (entries.length === 0) {
       throw new TypeError("A playback queue must contain at least one item.");
@@ -43,8 +43,8 @@ export class ArrayPlaybackQueue<T extends QueueItem>
       throw new RangeError("The initial item must exist in the playback queue.");
     }
     this.index = initialIndex;
-    this.seenIds = new Set(seenIds);
-    this.seenIds.add(initialId);
+    this.initiallySeenIds =
+      typeof seenIds === "function" ? new Set() : new Set(seenIds);
   }
 
   get current(): T {
@@ -92,8 +92,12 @@ export class ArrayPlaybackQueue<T extends QueueItem>
   }
 
   random(): T {
+    const seenIds =
+      typeof this.seenIds === "function"
+        ? new Set(this.seenIds())
+        : this.initiallySeenIds;
     const unseen = this.entries.filter(
-      ({ id }, index) => index !== this.index && !this.seenIds.has(id),
+      ({ id }, index) => index !== this.index && !seenIds.has(id),
     );
     const candidates =
       unseen.length > 0
@@ -117,7 +121,6 @@ export class ArrayPlaybackQueue<T extends QueueItem>
     if (nextIndex === this.index) return this.current;
     this.index = nextIndex;
     const item = this.current;
-    this.seenIds.add(item.id);
     for (const listener of this.listeners) listener(item);
     return item;
   }

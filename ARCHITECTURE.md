@@ -294,7 +294,7 @@ flowchart TD
 | Endpoint | Purpose | Boundary notes |
 |---|---|---|
 | `GET /api/search` | Search/trending/creator results | Backend owns query normalization; explicit pagination; limit capped (≤100) |
-| `GET /api/media/{id}` | Fresh metadata | Canonical `MediaItem` only |
+| `GET /api/media/{id}` | Fresh metadata | Canonical `MediaItem`; source descriptors are omitted and must be resolved through `/source` |
 | `GET /api/media/{id}/source` | Short-lived source descriptor | Returns a browser-safe playback URL; never upstream tokens |
 | `GET /api/stream/{id}?quality=auto|hd|sd` | Range relay | Media ID path and validated quality enum only; 200/206/416 semantics; no arbitrary URL or body buffering |
 | `GET /api/creator/{username}` | Creator profile | Canonical `Creator` |

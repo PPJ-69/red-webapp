@@ -3,6 +3,8 @@
 
   import type { MediaItem } from "../types/api";
   import { formatDuration } from "../utils/resultGrid";
+  import { sessionStore } from "../stores/sessionStore";
+  import FavoriteButton from "./FavoriteButton.svelte";
 
   export let item: MediaItem;
   export let index = 0;
@@ -21,6 +23,8 @@
   function openItem(): void {
     dispatch("open-item", { item, index });
   }
+
+  $: seen = $sessionStore.seen.includes(item.id);
 </script>
 
 <article class:current data-testid="result-card" aria-current={current ? "true" : undefined}>
@@ -43,6 +47,12 @@
     <div class="title-row">
       <h3>{item.title}</h3>
       <div class="action-slot">
+        {#if seen}
+          <span class="state-indicator" data-testid={`seen-${item.id}`}>
+            <span aria-hidden="true">✓</span> Seen
+          </span>
+        {/if}
+        <FavoriteButton mediaId={item.id} />
         <slot name="seen" />
         <slot name="favorite" />
       </div>
@@ -140,6 +150,18 @@
   .description {
     margin: 0;
     color: #cbd5e1;
+  }
+
+  .state-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2rem;
+    border: 1px solid #64748b;
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    color: #e2e8f0;
+    font-size: 0.85rem;
   }
 
   .description {
