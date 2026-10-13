@@ -36,10 +36,15 @@
 </script>
 
 <article class:current data-testid="result-card" aria-current={current ? "true" : undefined}>
-  <button type="button" class="card-button" on:click={openItem}>
+  <button
+    type="button"
+    class="card-button"
+    aria-label={`Open ${item.title}`}
+    on:click={openItem}
+  >
     <img
       loading="lazy"
-      alt={item.title}
+      alt=""
       src={item.thumbnailUrl ?? item.posterUrl ?? fallbackImage}
       referrerpolicy="no-referrer"
     />
@@ -97,6 +102,11 @@
     border-radius: 0.75rem;
     overflow: hidden;
     cursor: pointer;
+  }
+
+  .card-button:focus-visible {
+    outline: 3px solid #7dd3fc;
+    outline-offset: 3px;
   }
 
   img {

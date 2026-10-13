@@ -17,7 +17,10 @@
 <dialog
   bind:this={dialog}
   data-testid="keyboard-help-dialog"
+  role="dialog"
+  aria-modal="true"
   aria-labelledby="keyboard-help-title"
+  aria-describedby="keyboard-help-description"
   on:cancel|preventDefault={close}
   on:close={() => {
     if (open) close();
@@ -25,6 +28,9 @@
 >
   <div class="dialog-content">
     <h2 id="keyboard-help-title">Keyboard shortcuts</h2>
+    <p id="keyboard-help-description">
+      Keyboard shortcuts are available while the media player is open.
+    </p>
     <dl>
       <dt><kbd>Space</kbd></dt><dd>Play or pause</dd>
       <dt><kbd>←</kbd> / <kbd>→</kbd></dt><dd>Seek backward or forward 5 seconds</dd>
@@ -38,7 +44,12 @@
       <dt><kbd>V</kbd></dt><dd>Favorite intent</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close intent</dd>
     </dl>
-    <button type="button" data-testid="close-keyboard-help" on:click={close}>
+    <button
+      type="button"
+      data-testid="close-keyboard-help"
+      autofocus
+      on:click={close}
+    >
       Close
     </button>
   </div>
@@ -65,7 +76,8 @@
     padding: 1.25rem;
   }
 
-  h2 {
+  h2,
+  p {
     margin: 0;
   }
 

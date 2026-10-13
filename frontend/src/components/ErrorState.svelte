@@ -92,4 +92,9 @@
     font: inherit;
     padding: 0.5rem 0.8rem;
   }
+
+  button:focus-visible {
+    outline: 3px solid #7dd3fc;
+    outline-offset: 2px;
+  }
 </style>

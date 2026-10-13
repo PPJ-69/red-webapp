@@ -362,8 +362,11 @@
         sessionStore.toggleFavorite(itemId);
         break;
       case "close":
-        showKeyboardHelp = false;
-        dispatch("close", undefined);
+        if (showKeyboardHelp) {
+          showKeyboardHelp = false;
+        } else {
+          dispatch("close", undefined);
+        }
         break;
     }
   }

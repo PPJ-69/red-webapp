@@ -69,6 +69,12 @@ jobs:
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.player_controls_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.player_navigation_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.search_bar_spec -v
+          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.session_features_spec -v
+          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.browse_play_flow_spec -v
+          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.keyboard_navigation_spec -v
+          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.mobile_layout_spec -v
+          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.accessibility_audit_spec -v
+          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.no_persistent_storage_spec -v
           python -B tools/compliance/browser_storage_check/check_browser_storage.py --self-check
           python -B -m unittest discover -s tests/compliance -t . -v
 

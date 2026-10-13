@@ -68,7 +68,13 @@
 {#if filteredItems.length === 0 && !loading}
   <p class="empty" data-testid="result-grid-empty">No results yet.</p>
 {:else}
-  <div class="grid" data-testid="result-grid">
+  <div
+    class="grid"
+    data-testid="result-grid"
+    role="region"
+    aria-label="Search results"
+    aria-busy={loading}
+  >
     {#each filteredItems as item, index (item.id)}
       <ResultCard
         {item}

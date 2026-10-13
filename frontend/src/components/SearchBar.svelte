@@ -142,7 +142,7 @@
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={suggestions.length > 0}
-        aria-controls="tag-suggestions"
+        aria-controls={suggestions.length > 0 ? "tag-suggestions" : undefined}
         aria-activedescendant={activeSuggestion >= 0
           ? `tag-option-${activeSuggestion}`
           : undefined}

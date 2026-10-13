@@ -246,118 +246,127 @@
   <meta name="description" content="A native media player backed by a stream relay." />
 </svelte:head>
 
-<main>
+<div class="app-shell">
   <Header active={activePanel} on:navigate={(event) => setPanel(event.detail.panel)} />
-  <ToastErrorBanner
-    error={searchError}
-    on:dismiss={() => (searchError = null)}
-    on:retry={retrySearch}
-  />
+  <main>
+    <ToastErrorBanner
+      error={searchError}
+      on:dismiss={() => (searchError = null)}
+      on:retry={retrySearch}
+    />
 
-  {#if activePanel === "discovery"}
-    <SearchBar bind:this={searchBar} on:submit={submitSearch} />
-    <p data-testid="search-status" role="status" aria-live="polite">
-      {searchAnnouncement}
-    </p>
-    {#if displayedResults.length > 0 || searchContextStore.getSnapshot().loadingInitial || searchContextStore.getSnapshot().loadingMore}
-      <ResultGrid
-        items={displayedResults}
-        {currentItemId}
-        loading={searchContextStore.getSnapshot().loadingMore}
-        hasMore={searchContextStore.getSnapshot().hasMore}
-        on:open-item={openItem}
-        on:load={loadNextPage}
-      />
-    {:else if !searchContextStore.getSnapshot().loadingInitial}
-      <p data-testid="discovery-empty">Search for media to start browsing.</p>
-    {/if}
-    {#if currentItem && !playerOpen}
-      <button
-        type="button"
-        class="open-player"
-        data-testid="open-player"
-        bind:this={playerOpener}
-        aria-expanded="false"
-        on:click={reopenPlayer}
-      >Open selected item</button>
-    {/if}
-  {:else if activePanel === "favorites"}
-    <FavoritesPanel open={true} />
-  {:else}
-    <SettingsPanel />
-  {/if}
-
-  {#if playerOpen && currentItem}
-    <PlayerOverlay
-      item={currentItem}
-      {hasPrevious}
-      {hasNext}
-      {canRandom}
-      on:previous={movePrevious}
-      on:next={moveNext}
-      on:random={moveRandom}
-      on:close={closePlayer}
-    >
-      <MediaPlayer
-        itemId={currentItem.id}
-        {autoplay}
-        {hasNext}
-        bind:muted
-        bind:loop
-        bind:volume
-        bind:speed
-        {quality}
-        takePrefetchedSource={(id) => prefetcher.take(id)}
-        on:playerEvent={(event) => (playerState = event.detail.state)}
-        on:next={moveNext}
-        on:previous={movePrevious}
-        on:skip={moveNext}
-        on:close={closePlayer}
-      />
-      <ThumbnailRail
-        items={resultsQueue.items}
-        currentItemId={currentItem.id}
-        on:select={(event) => resultsQueue.select(event.detail.id)}
-      />
-      <InfoPanel
-        item={currentItem}
-        on:creator={(event) => (creatorUsername = event.detail.creator.username)}
-        on:tag={(event) => {
-          activePanel = "discovery";
-          searchBar.searchTag(event.detail.tag);
-        }}
-      />
-      {#if creatorUsername}
-        <CreatorPanel
-          username={creatorUsername}
-          on:search={(event) => {
-            creatorUsername = "";
-            activePanel = "discovery";
-            searchBar.searchCreator(event.detail.username);
-          }}
-          on:close={() => (creatorUsername = "")}
+    {#if activePanel === "discovery"}
+      <SearchBar bind:this={searchBar} on:submit={submitSearch} />
+      <p data-testid="search-status" role="status" aria-live="polite">
+        {searchAnnouncement}
+      </p>
+      {#if displayedResults.length > 0 || searchContextStore.getSnapshot().loadingInitial || searchContextStore.getSnapshot().loadingMore}
+        <ResultGrid
+          items={displayedResults}
+          {currentItemId}
+          loading={searchContextStore.getSnapshot().loadingMore}
+          hasMore={searchContextStore.getSnapshot().hasMore}
+          on:open-item={openItem}
+          on:load={loadNextPage}
         />
+      {:else if !searchContextStore.getSnapshot().loadingInitial}
+        <p data-testid="discovery-empty">Search for media to start browsing.</p>
       {/if}
-    </PlayerOverlay>
-  {/if}
+      {#if currentItem && !playerOpen}
+        <button
+          type="button"
+          class="open-player"
+          data-testid="open-player"
+          bind:this={playerOpener}
+          aria-expanded="false"
+          on:click={reopenPlayer}
+        >Open selected item</button>
+      {/if}
+    {:else if activePanel === "favorites"}
+      <FavoritesPanel open={true} />
+    {:else}
+      <SettingsPanel />
+    {/if}
 
-  <p data-testid="prefetch-status" role="status" aria-live="polite">
-    {prefetchAnnouncement}
-  </p>
-  <p data-testid="player-state" aria-live="polite">{playerState}</p>
-  <label class="autoplay-setting">
-    <input type="checkbox" bind:checked={autoplay} data-testid="autoplay-setting" />
-    Play next automatically
-  </label>
-</main>
+    {#if playerOpen && currentItem}
+      <PlayerOverlay
+        item={currentItem}
+        {hasPrevious}
+        {hasNext}
+        {canRandom}
+        on:previous={movePrevious}
+        on:next={moveNext}
+        on:random={moveRandom}
+        on:close={closePlayer}
+      >
+        <MediaPlayer
+          itemId={currentItem.id}
+          {autoplay}
+          {hasNext}
+          bind:muted
+          bind:loop
+          bind:volume
+          bind:speed
+          {quality}
+          takePrefetchedSource={(id) => prefetcher.take(id)}
+          on:playerEvent={(event) => (playerState = event.detail.state)}
+          on:next={moveNext}
+          on:previous={movePrevious}
+          on:skip={moveNext}
+          on:close={closePlayer}
+        />
+        <ThumbnailRail
+          items={resultsQueue.items}
+          currentItemId={currentItem.id}
+          on:select={(event) => resultsQueue.select(event.detail.id)}
+        />
+        <InfoPanel
+          item={currentItem}
+          on:creator={(event) => (creatorUsername = event.detail.creator.username)}
+          on:tag={(event) => {
+            activePanel = "discovery";
+            searchBar.searchTag(event.detail.tag);
+          }}
+        />
+        {#if creatorUsername}
+          <CreatorPanel
+            username={creatorUsername}
+            on:search={(event) => {
+              creatorUsername = "";
+              activePanel = "discovery";
+              searchBar.searchCreator(event.detail.username);
+            }}
+            on:close={() => (creatorUsername = "")}
+          />
+        {/if}
+      </PlayerOverlay>
+    {/if}
+
+    <p data-testid="prefetch-status" role="status" aria-live="polite">
+      {prefetchAnnouncement}
+    </p>
+    <p data-testid="player-state" role="status" aria-live="polite">{playerState}</p>
+    <label class="autoplay-setting">
+      <input type="checkbox" bind:checked={autoplay} data-testid="autoplay-setting" />
+      Play next automatically
+    </label>
+  </main>
+</div>
 
 <style>
+  .app-shell {
+    display: grid;
+    gap: 1rem;
+    box-sizing: border-box;
+    width: min(100%, 74.5rem);
+    margin: 2rem auto;
+    padding: 0 1.25rem;
+  }
+
   main {
     display: grid;
     gap: 1rem;
-    margin: 2rem auto;
-    max-width: 72rem;
-    padding: 0 1.25rem;
+    min-width: 0;
   }
 
   .autoplay-setting {
