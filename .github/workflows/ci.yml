@@ -60,7 +60,6 @@ jobs:
         run: |
           python -B tools/compliance/fs_monitor/run_scenario.py --root . &&
           python -B -c "from fastapi.testclient import TestClient; from backend.app.main import app; assert TestClient(app).get('/health/ready').status_code == 200"
-          
 
       - name: Verify browser storage monitor
         run: |
@@ -70,7 +69,7 @@ jobs:
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.player_controls_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.player_navigation_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.search_bar_spec -v
-#          PYTHONPATH=. python -B -m unittest frontend.tests.e2e.session_features_spec -v
+          # PYTHONPATH=. python -B -m unittest frontend.tests.e2e.session_features_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.browse_play_flow_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.keyboard_navigation_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.mobile_layout_spec -v
