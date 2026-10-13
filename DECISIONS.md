@@ -90,3 +90,9 @@
 - **C03-D2 — Sentinel behavior:** A single IntersectionObserver sentinel triggers the next-page event only when the grid is not already loading and there is more data to load; stale or superseded requests are ignored by the existing search context lifecycle.
 - **C03-D3 — Resilience:** Invalid or malformed items are dropped before render so one bad payload never blocks the rest of the grid. Current-item state is conveyed by text plus `aria-current`, never color alone.
 - **C03-D4 — Deferred state transitions:** The grid never mutates queue/session state; it emits only display-level open events so later chunks can connect stateful player and session logic without contaminating this chunk's contract.
+
+# M5-C04 Store Contracts
+
+- **C04-D1 — Virtual Store interface:** A frontend `Store` abstraction wraps Svelte's readable/writable contract and exposes `getSnapshot`, `set`, `update`, and `reset` so a later account-mode backend session can implement the same interface without changing consumers.
+- **C04-D2 — RAM-only session state:** Favorites, seen IDs, search history, and saved searches live in in-memory snapshots only. They are recreated on reload and never written to browser storage or any server-side persistence layer.
+- **C04-D3 — Privacy mode lock:** The settings store default enforces `privacyMode: true` and `privacyModeLocked: true`; the UI indicator shows "Locked ON" and ignores attempts to disable it while preserving a consistent, app-local state contract.

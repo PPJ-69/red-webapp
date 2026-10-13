@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **25 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **26 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M5: Discovery UI & Session Features**
 
 ## Current Chunk
-**M5-C04: Store interface, in-RAM session and settings stores, Privacy Mode indicator**
+**M5-C05: Favorites, seen, random, history, saved searches**
 - Status: pending.
-- Depends on: M5-C03.
-- Handoff: implement in-memory store interfaces, session/settings stores, and the privacy indicator without persisting browser state or wiring favorites/seen/history.
+- Depends on: M5-C03, M5-C04.
+- Handoff: implement the session-backed favorites/seen/history/search behaviors and keep all state in RAM only.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -40,6 +40,7 @@
 - **M4-C03:** Added a typed playback-recovery decision table, quality/auth retry limits, item-level unavailable/rate-limit/error states, Retry/Skip/Open actions, and error-envelope diagnosis for failed relay playback via a one-byte Range request. Added one-shot expired-signature fake-CDN behavior for browser coverage; forbidden sources remain terminal with no retry or bypass.
 - **M4-C04:** Added accessible native playback controls, keyboard shortcut routing with focus-aware typing suppression, keyboard help, and emitted player intent events. Fullscreen covers the player section so controls remain available while fullscreen. Queue and favorite behavior remain unwired.
 - **M5-C03:** Added the responsive ResultGrid/ResultCard display layer with lazy thumbnails, duration/creator metadata, a current-item indicator, and a single-flight IntersectionObserver sentinel. Invalid items are filtered before render so a single bad payload cannot block the grid, and the grid emits only display-level open events without wiring player/favorite/seen behavior. Targeted grid/context tests pass.
+- **M5-C04:** Added the `Store` abstraction, RAM-only session and settings stores, and a `SettingsPanel` privacy indicator that keeps Privacy Mode locked ON. No browser storage or persistence is used; targeted store tests pass.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -47,7 +48,7 @@
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
-- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll (done) · C04 RAM stores (current) · C05 favorites/seen/history · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
+- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (current) · C06 app integration · C07 a11y/E2E · C08 backend sessions *(conditional)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
 Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
@@ -116,7 +117,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-13
-- **Done:** Completed M5-C03: responsive result grid/cards with lazy thumbnails, current-item state via `aria-current`, invalid-item sanitization, and a guarded infinite-scroll sentinel that only triggers load when the grid is idle and more data exists.
-- **Next:** M5-C04: implement the RAM-only store interface, session/settings stores, and the Privacy Mode indicator without persisting browser state or wiring favorites/seen/history.
+- **Done:** Completed M5-C04: the `Store` abstraction, a RAM-only session/settings layer, and a locked Privacy Mode indicator with no browser persistence.
+- **Next:** M5-C05: implement favorites, seen state, random/history helpers, and saved-search behavior in the in-memory session store without introducing browser storage or backend sessions.
 - **Watch:** Live-provider use remains gated by O6. Backend sessions remain conditional pending O1/O10; preserve RAM-only metadata and the no-browser-storage policy.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

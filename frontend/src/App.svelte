@@ -4,6 +4,7 @@
   import MediaPlayer from "./components/MediaPlayer.svelte";
   import PlayerOverlay from "./components/PlayerOverlay.svelte";
   import SearchBar from "./components/SearchBar.svelte";
+  import SettingsPanel from "./components/SettingsPanel.svelte";
   import ResultGrid from "./components/ResultGrid.svelte";
   import { ArrayPlaybackQueue } from "./services/playbackQueue";
   import { PlaybackPrefetcher } from "./services/prefetch";
@@ -166,6 +167,7 @@
 <main>
   <h1>Stream-First Media Browser</h1>
   <SearchBar on:submit={submitSearch} />
+  <SettingsPanel />
   <p data-testid="search-status" role="status" aria-live="polite">
     {searchAnnouncement}
   </p>
