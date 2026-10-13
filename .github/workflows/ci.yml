@@ -58,7 +58,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPATH: .
         run: |
-          python -B tools/compliance/fs_monitor/run_scenario.py --root . -- \
+          python -B tools/compliance/fs_monitor/run_scenario.py --root . &&
           python -B -c "from fastapi.testclient import TestClient; from backend.app.main import app; assert TestClient(app).get('/health/ready').status_code == 200"
           
 
