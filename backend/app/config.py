@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from ipaddress import ip_network
 from typing import Mapping
+from urllib.parse import urlsplit
 
 
 class AppEnvironment(str, Enum):
@@ -20,6 +21,7 @@ class Settings:
     upstream_allowed_hosts: tuple[str, ...] = ()
     max_active_streams_per_ip: int = 3
     trusted_proxy_ips: tuple[str, ...] = ()
+    cors_allowed_origins: tuple[str, ...] = ()
 
     @classmethod
     def from_environment(
@@ -73,9 +75,53 @@ class Settings:
                     "TRUSTED_PROXY_IPS must contain valid IP addresses or CIDRs."
                 ) from exc
 
+        cors_allowed_origins: list[str] = []
+        for origin in environ.get("CORS_ALLOWED_ORIGINS", "").split(","):
+            origin = origin.strip()
+            if not origin:
+                continue
+            try:
+                cors_allowed_origins.append(_normalize_origin(origin))
+            except ValueError as exc:
+                raise ConfigurationError(
+                    "CORS_ALLOWED_ORIGINS must contain explicit HTTP(S) origins "
+                    "without paths, credentials, queries, or wildcards."
+                ) from exc
+
         return cls(
             app_env=app_env,
             upstream_allowed_hosts=upstream_allowed_hosts,
             max_active_streams_per_ip=max_active_streams_per_ip,
             trusted_proxy_ips=tuple(trusted_proxy_ips),
+            cors_allowed_origins=tuple(dict.fromkeys(cors_allowed_origins)),
         )
+
+
+def _normalize_origin(origin: str) -> str:
+    parsed = urlsplit(origin)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or parsed.hostname is None
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path not in {"", "/"}
+        or parsed.query
+        or parsed.fragment
+        or "*" in origin
+    ):
+        raise ValueError("Invalid origin.")
+
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError("Invalid origin port.") from exc
+
+    hostname = parsed.hostname.lower()
+    if ":" in hostname:
+        hostname = f"[{hostname}]"
+    if port is not None and not (
+        parsed.scheme == "http" and port == 80
+        or parsed.scheme == "https" and port == 443
+    ):
+        hostname = f"{hostname}:{port}"
+    return f"{parsed.scheme}://{hostname}"

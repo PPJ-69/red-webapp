@@ -11,6 +11,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.upstream_allowed_hosts, ())
         self.assertEqual(settings.max_active_streams_per_ip, 3)
         self.assertEqual(settings.trusted_proxy_ips, ())
+        self.assertEqual(settings.cors_allowed_origins, ())
 
     def test_loads_allowlisted_upstream_hosts(self) -> None:
         settings = Settings.from_environment({
@@ -47,6 +48,37 @@ class SettingsTests(unittest.TestCase):
             Settings.from_environment(
                 {"APP_ENV": "test", "TRUSTED_PROXY_IPS": "not-an-ip"}
             )
+
+    def test_normalizes_explicit_cors_origins(self) -> None:
+        settings = Settings.from_environment(
+            {
+                "APP_ENV": "test",
+                "CORS_ALLOWED_ORIGINS": (
+                    " https://frontend.example/ , http://localhost:5173, "
+                    "https://frontend.example "
+                ),
+            }
+        )
+
+        self.assertEqual(
+            settings.cors_allowed_origins,
+            ("https://frontend.example", "http://localhost:5173"),
+        )
+
+    def test_rejects_wildcard_or_non_origin_cors_entries(self) -> None:
+        for origin in (
+            "*",
+            "https://*.example.com",
+            "https://frontend.example/path",
+            "https://user:password@frontend.example",
+            "https://frontend.example?token=secret",
+        ):
+            with self.subTest(origin=origin), self.assertRaisesRegex(
+                ConfigurationError, "CORS_ALLOWED_ORIGINS"
+            ):
+                Settings.from_environment(
+                    {"APP_ENV": "test", "CORS_ALLOWED_ORIGINS": origin}
+                )
 
     def test_missing_environment_fails_fast(self) -> None:
         with self.assertRaisesRegex(ConfigurationError, "APP_ENV must be set"):

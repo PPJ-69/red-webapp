@@ -102,3 +102,9 @@
 - **C05-D1 — Playback-based seen state:** An item becomes seen when the native player emits `playing`; selecting or navigating to an item alone does not mark it seen. Random navigation reads the session store's current seen IDs.
 - **C05-D2 — Metadata/playback boundary:** `GET /api/media/{id}` returns canonical metadata without source descriptors. Playback sources are resolved only through `GET /api/media/{id}/source`.
 - **C05-D3 — Ephemeral favorites hydration:** The session store keeps favorite IDs only. The Favorites panel fetches canonical metadata when opened and retains it only in frontend memory; no browser storage or backend session is introduced.
+
+# M6-C01 Security Headers and CORS Contracts
+
+- **C01-D1 — Browser response policy:** Apply CSP, Referrer-Policy, `X-Content-Type-Options`, frame denial, and a restrictive Permissions-Policy to backend responses and frontend-served documents. CSP permits same-origin scripts and API connections, HTTPS metadata images/direct media, and only inline styles required by the UI; it denies objects and framing. Development-only Vite CSP permits eval for browser automation; backend and preview policies do not.
+- **C01-D2 — CORS defaults:** `CORS_ALLOWED_ORIGINS` is an optional comma-separated list of exact HTTP(S) origins. Empty means same-origin only. Wildcards, credentials, and unconfigured origins are not allowed. Preflight permits only the currently supported API methods and headers.
+- **C01-D3 — Session response cache policy:** Responses under `/api/session` carry `Cache-Control: no-store` if that optional surface is enabled later.

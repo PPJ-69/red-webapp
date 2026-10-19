@@ -15,6 +15,7 @@ from .domain.errors import register_exception_handlers
 from .domain.models import canonical_model_schemas
 from .observability.logging import configure_logging, install_request_context
 from .observability.metrics import metrics
+from .security.headers import install_security_headers
 
 
 @asynccontextmanager
@@ -43,6 +44,7 @@ app.include_router(stream_router)
 app.include_router(tags_router)
 register_exception_handlers(app)
 install_request_context(app)
+install_security_headers(app)
 
 
 def _openapi_with_canonical_models() -> dict:

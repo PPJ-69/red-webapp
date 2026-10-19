@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **29 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **30 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M6: Hardening & Release**
 
 ## Current Chunk
-**M6-C01: Security headers, CORS, and CSP finalization**
+**M6-C02: Observability completion and log-leak audit**
 - Status: pending.
-- Depends on: M3-C05, M5-C07.
-- Handoff: establish same-origin security headers, restrictive CSP, and explicit CORS policy for the integrated application.
+- Depends on: M2-C05, M3-C05.
+- Handoff: complete metrics exposure/reportability and exercise canary leak scenarios without exposing secrets in logs or labels.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -47,6 +47,7 @@
 - **M5-C05:** Wired favorites into result cards/player keyboard controls, seen state to native playback start, random navigation to the session seen set, and recent/saved search flows. Added on-demand Favorites metadata hydration and canonical `GET /api/media/{id}` without source descriptors; state remains frontend RAM-only. Backend suite, frontend checks, and session-feature browser coverage pass.
 - **M5-C06:** Integrated discovery-backed playback, previous/next/random, creator and tag exploration, favorites/settings navigation, and user-facing errors. Closing restores scroll and focus; Escape/G returns to results. The fake-provider browse/play browser flow passes.
 - **M5-C07:** Completed accessibility and responsive work: semantic landmarks/results states, labelled native modal with keyboard focus, visible focus, reduced motion, and constrained-width layouts. Added keyboard, mobile/infinite-scroll, accessibility, and browser-restart privacy checks. All 15 browser E2E tests pass.
+- **M6-C01:** Added CSP and browser security headers to backend responses and Vite-served documents, plus exact-origin CORS allowlisting via `CORS_ALLOWED_ORIGINS` (empty defaults to same-origin; no wildcard or credentials). Added hostile-metadata browser coverage and API/stream/CORS integration tests.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -55,7 +56,7 @@
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (done) · C06 app integration (done) · C07 a11y/E2E (done) · C08 backend sessions *(conditional; pending O1/O10)*
-- **M6 Hardening & Release:** C01 headers/CORS/CSP · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
+- **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
 Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
 
@@ -71,6 +72,7 @@ Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only
 - Frontend is authoritative for favorites/seen/history in v1, behind a `Store` interface; no browser storage APIs (D7, D8).
 - POC-first ordering; compliance harness runs in CI from M1.
 - Same-origin deployment by default (D12).
+- Browser documents and backend responses receive restrictive CSP/security headers; CORS remains same-origin unless exact origins are explicitly configured. Development-only Vite CSP permits eval for test tooling; production headers remain strict.
 
 ## Known Issues
 No implementation defects remain from the completed-chunk audit. Outstanding document/source-of-truth issues:
@@ -100,6 +102,7 @@ No implementation defects remain from the completed-chunk audit. Outstanding doc
 - **M5-C02:** Added accessible SearchBar and SearchFilters components, normalized chip previews, trending/latest/top/score ordering, 1–100 page size, and tag suggestions with a 250 ms debounce, two-character minimum, active-request cancellation, and surfaced errors. Wired search submissions through the M5-C01 context; tests verify serialized query parameters and that typing does not trigger player shortcuts. All 148 frontend unit tests, type-check, production build, storage policy check, and the fake-provider browser search test pass.
 - **M5-C03:** Added the responsive ResultGrid/ResultCard display layer with lazy thumbnails, duration/creator metadata, a current-item indicator, and a single-flight IntersectionObserver sentinel. Invalid items are filtered before render so a single bad payload cannot block the grid, and the grid emits only display-level open events without wiring player/favorite/seen behavior. Frontend Svelte check and the targeted grid/search-context tests pass.
 - **Completed-chunk audit (2026-10-19):** Backend suite passes (148 tests); frontend Svelte check has 0 warnings/errors, 164 Vitest tests pass, storage/lock/schema checks pass, and production build succeeds. All 15 browser E2E tests pass. All 7 compliance harness tests and browser-monitor self-check pass; idle backend boot reports zero writes. Audit fixes restored disabled CI suites, reintroduced mobile/infinite-scroll coverage, wired search pagination into the UI, fixed POC failure-fixture metadata, and removed redundant dialog/autofocus warnings.
+- **M6-C01:** Full backend suite passes (153 tests), including explicit CORS origin/method/header allow/deny coverage and security-header assertions on API/stream responses. All 164 frontend unit tests, Svelte check, and production build pass. All 16 Chromium E2E tests pass, including hostile metadata rendering and static-document header assertions; production preview serves the strict CSP without `unsafe-eval`.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
@@ -125,7 +128,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-19
-- **Done:** Revalidated completed chunks and fixed discovered pagination, POC fault-fixture, mobile coverage, and CI omissions. Backend, frontend, E2E, compliance, and production-build checks pass.
-- **Next:** M6-C01 remains pending. Resolve the REQUIREMENTS/PLAN session-scope conflict before claiming full product-requirement compliance; M5-C08 remains conditional on O1/O10.
+- **Done:** Completed M6-C01 security headers, CSP, CORS allowlisting, and hostile metadata browser verification. Backend, frontend unit, type-check, build, and all 16 browser E2E tests pass.
+- **Next:** M6-C02. Resolve the REQUIREMENTS/PLAN session-scope conflict before claiming full product-requirement compliance; M5-C08 remains conditional on O1/O10.
 - **Watch:** Live-provider use remains gated by O6. Preserve RAM-only metadata and no-browser-storage behavior unless O1/O10 is explicitly resolved.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
