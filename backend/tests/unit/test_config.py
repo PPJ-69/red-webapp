@@ -10,6 +10,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.app_env, AppEnvironment.TEST)
         self.assertEqual(settings.upstream_allowed_hosts, ())
         self.assertEqual(settings.max_active_streams_per_ip, 3)
+        self.assertEqual(settings.source_cache_ttl_seconds, 60.0)
         self.assertEqual(settings.trusted_proxy_ips, ())
         self.assertEqual(settings.cors_allowed_origins, ())
 
@@ -48,6 +49,20 @@ class SettingsTests(unittest.TestCase):
             Settings.from_environment(
                 {"APP_ENV": "test", "TRUSTED_PROXY_IPS": "not-an-ip"}
             )
+
+    def test_loads_and_validates_source_cache_ttl(self) -> None:
+        settings = Settings.from_environment(
+            {"APP_ENV": "test", "SOURCE_CACHE_TTL_SECONDS": "45.5"}
+        )
+
+        self.assertEqual(settings.source_cache_ttl_seconds, 45.5)
+        for value in ("0", "-1", "NaN", "inf", "many"):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                ConfigurationError, "SOURCE_CACHE_TTL_SECONDS"
+            ):
+                Settings.from_environment(
+                    {"APP_ENV": "test", "SOURCE_CACHE_TTL_SECONDS": value}
+                )
 
     def test_normalizes_explicit_cors_origins(self) -> None:
         settings = Settings.from_environment(

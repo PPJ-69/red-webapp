@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **31 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **32 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M6: Hardening & Release**
 
 ## Current Chunk
-**M6-C03: Load, memory, and limit tuning**
+**M6-C04: Deployment packaging and reverse proxy**
 - Status: pending.
-- Depends on: M3-C06, M5-C07.
-- Handoff: run load/soak measurements, tune existing stream/source-cache limits from results, and document conditions and any unmet targets.
+- Depends on: M3-C04, M6-C01, M6-C02, M6-C03.
+- Handoff: add the minimal runtime image and reverse-proxy configuration; verify Range/seek behavior through the proxy and graceful stream shutdown.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -49,6 +49,7 @@
 - **M5-C07:** Completed accessibility and responsive work: semantic landmarks/results states, labelled native modal with keyboard focus, visible focus, reduced motion, and constrained-width layouts. Added keyboard, mobile/infinite-scroll, accessibility, and browser-restart privacy checks. All 15 browser E2E tests pass.
 - **M6-C01:** Added CSP and browser security headers to backend responses and Vite-served documents, plus exact-origin CORS allowlisting via `CORS_ALLOWED_ORIGINS` (empty defaults to same-origin; no wildcard or credentials). Added hostile-metadata browser coverage and API/stream/CORS integration tests.
 - **M6-C02:** Added structured stdout metrics snapshots on graceful shutdown, updated the direct-vs-relay gauge as the direct share of uncached source resolutions, and verified canary-free logs for upstream 401/403/429, timeout, disconnect, and malformed-item failures. Metrics remain unlabeled; `browser_player_errors` remains excluded under G4.
+- **M6-C03:** Added repeatable fake-provider/CDN latency checks, expanded the relay memory/cancellation scenario to sixteen concurrent cancelled streams, made the source-cache TTL configurable with a 60-second default, and verified production JS size plus viewport-driven thumbnail requests in Chromium. Local p95/memory/bundle targets pass; live-provider capacity and signed-URL lifetime remain unverified under O6.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -57,7 +58,7 @@
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (done) · C06 app integration (done) · C07 a11y/E2E (done) · C08 backend sessions *(conditional; pending O1/O10)*
-- **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit (done) · C03 load tuning · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
+- **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit (done) · C03 load tuning (done) · C04 deploy/proxy · C05 full no-download compliance run · C06 docs/runbook
 
 Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
 
@@ -74,6 +75,7 @@ Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only
 - POC-first ordering; compliance harness runs in CI from M1.
 - Same-origin deployment by default (D12).
 - Browser documents and backend responses receive restrictive CSP/security headers; CORS remains same-origin unless exact origins are explicitly configured. Development-only Vite CSP permits eval for test tooling; production headers remain strict.
+- Resolver source descriptors and internal targets use a configurable 60-second default TTL (`SOURCE_CACHE_TTL_SECONDS`); per-IP relay concurrency remains three pending live-provider capacity evidence.
 - Metrics remain process-local, unlabeled, and stdout-only; `metrics_snapshot` logs the complete snapshot at graceful shutdown. `direct_vs_relay_ratio` reports the direct fraction of successful uncached source classifications; G4's `browser_player_errors` remains excluded.
 
 ## Known Issues
@@ -106,6 +108,7 @@ No implementation defects remain from the completed-chunk audit. Outstanding doc
 - **Completed-chunk audit (2026-10-19):** Backend suite passes (148 tests); frontend Svelte check has 0 warnings/errors, 164 Vitest tests pass, storage/lock/schema checks pass, and production build succeeds. All 15 browser E2E tests pass. All 7 compliance harness tests and browser-monitor self-check pass; idle backend boot reports zero writes. Audit fixes restored disabled CI suites, reintroduced mobile/infinite-scroll coverage, wired search pagination into the UI, fixed POC failure-fixture metadata, and removed redundant dialog/autofocus warnings.
 - **M6-C01:** Full backend suite passes (153 tests), including explicit CORS origin/method/header allow/deny coverage and security-header assertions on API/stream responses. All 164 frontend unit tests, Svelte check, and production build pass. All 16 Chromium E2E tests pass, including hostile metadata rendering and static-document header assertions; production preview serves the strict CSP without `unsafe-eval`.
 - **M6-C02:** Full backend CI suite passes (160 tests). Added canary leak scenarios for upstream 401/403/429, stream timeout and disconnect, and malformed provider data; verifies credentials, signed URL query values, cookies, and session contents appear neither in logs nor metric labels. Verified the shutdown JSON metrics snapshot and direct/relay ratio calculations.
+- **M6-C03:** Full backend suite passes (164 tests), including 100-sample fake-provider search/source-resolution benchmarks, 30 loopback relay first-byte samples, and the 128 MiB relay with 16 concurrent cancelled streams (4.0 MiB RSS growth, <48 MiB). Chromium confirms 39/100 lazy thumbnails requested before scrolling and loads card 90 when scrolled into view. Vite production entry JavaScript is 38.39 kB gzip (<250 kB). Source-cache TTL is configurable, default 60 seconds; per-IP cap remains 3 pending live-provider capacity evidence. Backend sessions remain N/A under O1/O10.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
   - M6-C05 full no-download scenario (**release-blocking**).
@@ -124,14 +127,14 @@ O5 is resolved; other gates remain open and use their listed defaults until reso
 | G2 | Multi-range `Range` header | M3-C02 | Treat as no Range |
 | G3 | Definition of "seen" | M5-C05 | Mark when playback begins |
 | G4 | Reporting path for `browser_player_errors` | M6-C02 | Not implemented |
-| O11 / O13 | Cache/session/limit values; metrics exposure | M6-C02, M6-C03 | From load tests; stdout only |
+| O11 / O13 | Cache/session/limit values; metrics exposure | M6-C02, M6-C03 | Local cache/stream values recorded; backend session cap pending O1/O10; metrics stdout-only |
 | O7 / O8 | Hosted access control; audience gating | Hosted release | Private/trusted network only |
 
 Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkable URLs).
 
 ## Last Handoff
 - **Date:** 2026-10-19
-- **Done:** Completed M6-C02 metrics reportability and the log-leak audit; all 160 backend tests pass.
-- **Next:** M6-C03 load, memory, and limit tuning. Resolve the REQUIREMENTS/PLAN session-scope conflict before claiming full product-requirement compliance; M5-C08 remains conditional on O1/O10.
+- **Done:** Completed M6-C03 load, memory, and limit tuning; the full backend suite passes (164 tests).
+- **Next:** M6-C04 deployment packaging and reverse-proxy behavior. Resolve the REQUIREMENTS/PLAN session-scope conflict before claiming full product-requirement compliance; M5-C08 remains conditional on O1/O10.
 - **Watch:** Live-provider use remains gated by O6. Preserve RAM-only metadata and no-browser-storage behavior unless O1/O10 is explicitly resolved.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

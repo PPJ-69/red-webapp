@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, urlencode
 
+from backend.app.config import DEFAULT_SOURCE_CACHE_TTL_SECONDS
 from backend.app.domain.enums import ErrorCategory
 from backend.app.domain.errors import ApplicationError
 from backend.app.domain.models import InternalSourceTarget, MediaSource, SourceResolution
@@ -17,7 +18,7 @@ class MediaResolver:
     def __init__(
         self,
         provider: UpstreamMediaProvider,
-        ttl_seconds: float = 300.0,
+        ttl_seconds: float = DEFAULT_SOURCE_CACHE_TTL_SECONDS,
         metrics_registry: MetricsRegistry | None = None,
     ) -> None:
         self.provider = provider

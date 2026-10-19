@@ -1,8 +1,12 @@
 from dataclasses import dataclass
 from enum import Enum
+import math
 from ipaddress import ip_network
 from typing import Mapping
 from urllib.parse import urlsplit
+
+
+DEFAULT_SOURCE_CACHE_TTL_SECONDS = 60.0
 
 
 class AppEnvironment(str, Enum):
@@ -22,6 +26,7 @@ class Settings:
     max_active_streams_per_ip: int = 3
     trusted_proxy_ips: tuple[str, ...] = ()
     cors_allowed_origins: tuple[str, ...] = ()
+    source_cache_ttl_seconds: float = DEFAULT_SOURCE_CACHE_TTL_SECONDS
 
     @classmethod
     def from_environment(
@@ -62,6 +67,21 @@ class Settings:
                 "MAX_ACTIVE_STREAMS_PER_IP must be a positive integer."
             )
 
+        raw_source_cache_ttl = environ.get(
+            "SOURCE_CACHE_TTL_SECONDS",
+            str(DEFAULT_SOURCE_CACHE_TTL_SECONDS),
+        ).strip()
+        try:
+            source_cache_ttl_seconds = float(raw_source_cache_ttl)
+        except ValueError as exc:
+            raise ConfigurationError(
+                "SOURCE_CACHE_TTL_SECONDS must be a positive number."
+            ) from exc
+        if not math.isfinite(source_cache_ttl_seconds) or source_cache_ttl_seconds <= 0:
+            raise ConfigurationError(
+                "SOURCE_CACHE_TTL_SECONDS must be a positive number."
+            )
+
         raw_trusted_proxies = environ.get("TRUSTED_PROXY_IPS", "")
         trusted_proxy_ips: list[str] = []
         for proxy in raw_trusted_proxies.split(","):
@@ -94,6 +114,7 @@ class Settings:
             max_active_streams_per_ip=max_active_streams_per_ip,
             trusted_proxy_ips=tuple(trusted_proxy_ips),
             cors_allowed_origins=tuple(dict.fromkeys(cors_allowed_origins)),
+            source_cache_ttl_seconds=source_cache_ttl_seconds,
         )
 
 

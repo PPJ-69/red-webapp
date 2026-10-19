@@ -114,3 +114,8 @@
 - **C02-D1 — Metrics exposure:** Keep metrics process-local and expose snapshots as structured JSON log events to stdout at graceful application shutdown. Do not add a metrics HTTP endpoint or persistent sink under the O13 stdout-only default.
 - **C02-D2 — Direct/relay ratio:** `direct_vs_relay_ratio` is the fraction of successful source classifications that are direct (`direct / (direct + relay)`), updated only on uncached source resolution. It is 0 before the first resolution. The registry remains unlabeled.
 - **C02-D3 — Browser player errors:** Do not add `browser_player_errors` without a defined reporting endpoint or telemetry path; it remains excluded under G4.
+
+# M6-C03 Load-Tuning Decisions
+
+- **C03-D1 — Source-cache lifetime:** Set the configurable source descriptor/target cache TTL default to 60 seconds via `SOURCE_CACHE_TTL_SECONDS`. Fake-provider resolution remains well below the latency target at this value; the live provider's signed-URL lifetime is still unverified under O6.
+- **C03-D2 — Stream and session caps:** Retain `MAX_ACTIVE_STREAMS_PER_IP=3`; the 16-stream cancellation test demonstrates bounded local memory but does not establish provider concurrency or rate-limit capacity. Do not add a backend session cap while backend-session scope remains unresolved under O1/O10.

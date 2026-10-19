@@ -11,6 +11,85 @@ from frontend.tests.e2e.player_basic_spec import PlayerBasicBrowserTests
 class BrowsePlayFlowBrowserTests(PlayerBasicBrowserTests):
     test_media_player_loads_plays_buffers_and_releases_previous_source = None
 
+    def test_result_grid_thumbnails_load_as_the_viewport_approaches(self) -> None:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            try:
+                page = browser.new_page(viewport={"width": 800, "height": 500})
+                requested_images: list[str] = []
+                results = {
+                    "items": [
+                        {
+                            "id": f"lazy-media-{index}",
+                            "title": f"Lazy media {index}",
+                            "thumbnailUrl": (
+                                f"https://images.example.invalid/{index}.png"
+                            ),
+                            "tags": [],
+                        }
+                        for index in range(100)
+                    ],
+                    "page": 1,
+                    "limit": 100,
+                    "hasMore": False,
+                    "total": 100,
+                }
+
+                page.route(
+                    "**/api/search?*",
+                    lambda route: route.fulfill(
+                        status=200,
+                        content_type="application/json",
+                        body=json.dumps(results),
+                    ),
+                )
+
+                def image(route) -> None:
+                    requested_images.append(route.request.url)
+                    route.fulfill(
+                        status=200,
+                        content_type="image/png",
+                        body=(
+                            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+                            b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00"
+                            b"\x00\x00\x90wS\xde\x00\x00\x00\x0bIDAT"
+                            b"\x08\xd7c\xf8\x0f\x00\x01\x01\x01\x00"
+                            b"\x18\xdd\x8d\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+                        ),
+                    )
+
+                page.route("https://images.example.invalid/**", image)
+                page.goto(
+                    f"http://127.0.0.1:{self.web_port}/",
+                    wait_until="networkidle",
+                )
+                page.get_by_test_id("search-submit").click()
+                cards = page.get_by_test_id("result-card")
+                expect(cards).to_have_count(100)
+                expect(
+                    page.locator('[data-testid="result-grid"] img[loading="lazy"]')
+                ).to_have_count(100)
+                initial_request_count = len(requested_images)
+                print(
+                    "Viewport lazy-load check: "
+                    f"{initial_request_count}/100 thumbnails requested before scrolling"
+                )
+                self.assertLess(
+                    initial_request_count,
+                    100,
+                    "Offscreen grid thumbnails were all fetched before scrolling.",
+                )
+
+                target_url = "https://images.example.invalid/90.png"
+                cards.nth(90).scroll_into_view_if_needed()
+                page.wait_for_function(
+                    "(url) => performance.getEntriesByName(url).length > 0",
+                    arg=target_url,
+                )
+                self.assertIn(target_url, requested_images)
+            finally:
+                browser.close()
+
     def test_search_open_navigate_close_and_creator_search(self) -> None:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()

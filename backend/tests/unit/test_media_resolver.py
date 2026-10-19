@@ -1,6 +1,11 @@
 import unittest
 from unittest.mock import patch
 
+from fastapi import FastAPI
+from starlette.requests import Request
+
+from backend.app.config import AppEnvironment, Settings
+from backend.app.dependencies import get_media_resolver
 from backend.app.domain.models import InternalSourceTarget, MediaItem, MediaSource
 from backend.app.observability.metrics import MetricsRegistry
 from backend.app.services.media_resolver import MediaResolver
@@ -8,6 +13,20 @@ from backend.tests.fakes.fake_provider import FakeMediaProvider
 
 
 class MediaResolverTests(unittest.IsolatedAsyncioTestCase):
+    async def test_dependency_uses_configured_source_cache_ttl(self) -> None:
+        app = FastAPI()
+        app.state.settings = Settings(
+            AppEnvironment.TEST,
+            source_cache_ttl_seconds=45.5,
+        )
+        app.state.upstream_provider = FakeMediaProvider()
+        request = Request({"type": "http", "app": app})
+
+        resolver = get_media_resolver(request)
+
+        self.assertEqual(resolver.cache.ttl_seconds, 45.5)
+        self.assertEqual(resolver._resolution_cache.ttl_seconds, 45.5)
+
     async def test_resolve_returns_public_source_descriptor(self) -> None:
         resolver = MediaResolver(FakeMediaProvider())
 

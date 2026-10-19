@@ -117,7 +117,7 @@ class RelayMemoryPerformanceTests(unittest.TestCase):
                 cdn.set_fault(FakeCDNFault.SLOW)
                 held = [
                     await service.stream(f"cancel-{index}", None)
-                    for index in range(3)
+                    for index in range(16)
                 ]
 
                 first_chunks = [asyncio.Event() for _ in held]
@@ -175,7 +175,7 @@ class RelayMemoryPerformanceTests(unittest.TestCase):
                     f"RSS grew by {(peak - baseline) / (1024 * 1024):.1f} MiB",
                 )
                 opened, closed, active = cdn.connection_counts
-                self.assertGreaterEqual(opened, 4)
+                self.assertGreaterEqual(opened, 17)
                 self.assertTrue(
                     await asyncio.to_thread(
                         cdn.wait_for_closed_connections, opened, 10
