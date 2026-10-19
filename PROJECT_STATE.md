@@ -5,7 +5,7 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **34 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **35 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
@@ -13,9 +13,9 @@
 
 ## Current Chunk
 **M6-C06: Documentation and operational runbook**
-- Status: pending.
+- Status: done.
 - Depends on: M6-C05, M6-C03.
-- Handoff: complete the operational runbook and reconcile privacy wording, known limitations, and release gates across project documentation.
+- Handoff: M6 unconditional work is complete. Do not use live provider operations until O6 and concrete provider wiring are resolved; hosted/public release also requires O7/O8.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -52,6 +52,7 @@
 - **M6-C03:** Added repeatable fake-provider/CDN latency checks, expanded the relay memory/cancellation scenario to sixteen concurrent cancelled streams, made the source-cache TTL configurable with a 60-second default, and verified production JS size plus viewport-driven thumbnail requests in Chromium. Local p95/memory/bundle targets pass; live-provider capacity and signed-URL lifetime remain unverified under O6.
 - **M6-C04:** Added a two-image production build (frontend assets in unprivileged Nginx; non-root Python API), read-only Compose services with externally mounted TLS files, Range-aware unbuffered proxying and trusted proxy identity. Added loopback proxy integration coverage for repeated Range/seek plus transport closure on application shutdown; actual Docker/Nginx execution remains unavailable in this environment.
 - **M6-C05:** Added a release-blocking browser/filesystem scenario and `docs/security-review.md`; the scenario exercises 10 unique searches, 100 distinct real playback sessions with 200 seeks and 100 Range requests, 320 scrolled thumbnails, favorites/save-search, browser restart, browser-storage/cookie checks, and recursive artifact scans while monitoring project/temp/app-data roots. CI runs the scenario. Local run found zero storage use, cookies, filesystem writes, or new artifacts; security checklist records O6 and O7/O8 deployment limits.
+- **M6-C06:** Added the project README, architecture/API/privacy references, operational runbook, and an O6/O7/O8 release checklist. Committed generated OpenAPI and CI checks for schema freshness, local Markdown links, and qualified privacy wording. Reconciled deployment/security wording and documented that production provider wiring and backend sessions are absent; no architecture or product decisions were changed.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -60,9 +61,9 @@
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (done) · C06 app integration (done) · C07 a11y/E2E (done) · C08 backend sessions *(conditional; pending O1/O10)*
-- **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit (done) · C03 load tuning (done) · C04 deploy/proxy (done) · C05 full no-download compliance/security review (done) · C06 docs/runbook
+- **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit (done) · C03 load tuning (done) · C04 deploy/proxy (done) · C05 full no-download compliance/security review (done) · C06 docs/runbook (done)
 
-Hard gates: M6-C05's no-download scenario passes locally and runs as a release-blocking CI stage. Live-provider use remains gated on O6; hosted/public release remains blocked by O7/O8.
+Hard gates: M6-C05's no-download scenario passes locally and runs as a release-blocking CI stage. Live-provider operation is gated on O6 and missing production provider wiring; hosted/public release remains blocked by O6/O7/O8. Real Docker/Nginx/TLS smoke remains outstanding.
 
 ## Important Architecture Decisions
 - **Stream, don't store.** No DB, media or thumbnail cache, or persisted app state. RAM-only, TTL-bound.
@@ -81,12 +82,13 @@ Hard gates: M6-C05's no-download scenario passes locally and runs as a release-b
 - Runtime deployment uses read-only non-root containers and externally mounted TLS credentials; Nginx is the only public entrypoint and is the sole trusted forwarded-IP peer.
 - Metrics remain process-local, unlabeled, and stdout-only; `metrics_snapshot` logs the complete snapshot at graceful shutdown. `direct_vs_relay_ratio` reports the direct fraction of successful uncached source classifications; G4's `browser_player_errors` remains excluded.
 
-## Known Issues
-No implementation defects remain from the completed-chunk audit. Outstanding document/source-of-truth issues:
-1. **Requirement references drift.** ARCHITECTURE and PLAN cite sections through roughly 70 (including error taxonomy, session TTLs, and metrics), while REQUIREMENTS.md has 29 sections. The documented acceptance criteria cannot be traced reliably to the current requirements.
-2. **Session scope conflicts with product requirements.** REQUIREMENTS.md calls for `/api/session*` endpoints and session identification/TTL/cleanup. The approved plan makes the backend service conditional (M5-C08) and defaults to frontend-only state. Current code follows the plan default, so it does not implement the session API/cleanup described by REQUIREMENTS. O1/O10 must be explicitly resolved before claiming full requirements compliance; do not add M5-C08 without that decision.
-3. **Repo layout differs.** REQUIREMENTS §25 (`api/providers/streaming/sessions/models`) vs PLAN (`domain/upstream/services/security/observability`). REQUIREMENTS allows changes; confirm the PLAN layout.
-4. **Milestone numbering differs** across docs (REQUIREMENTS M0–M8, ARCHITECTURE M1–M7, PLAN M1–M6). Use PLAN numbering.
+## Known Issues and Release Blockers
+1. **Production provider wiring is absent.** `backend/app/main.py` does not install a concrete provider instance and Compose does not configure one. Health checks can pass while provider-backed routes fail. Live operation requires wiring and verification; M6-C06 documents this but does not change application behavior.
+2. **Requirement references drift.** ARCHITECTURE and PLAN cite sections through roughly 70 (including error taxonomy, session TTLs, and metrics), while REQUIREMENTS.md has 29 sections. The documented acceptance criteria cannot be traced reliably to the current requirements.
+3. **Session scope conflicts with product requirements.** REQUIREMENTS.md calls for `/api/session*` endpoints and session identification/TTL/cleanup. The approved plan makes the backend service conditional (M5-C08) and defaults to frontend-only state. Current code follows the plan default, so it does not implement the session API/cleanup described by REQUIREMENTS. O1/O10 must be explicitly resolved before claiming full requirements compliance; do not add M5-C08 without that decision.
+4. **Repo layout differs.** REQUIREMENTS §25 (`api/providers/streaming/sessions/models`) vs PLAN (`domain/upstream/services/security/observability`). REQUIREMENTS allows changes; use the approved PLAN layout unless the architecture is explicitly revised.
+5. **Milestone numbering differs** across docs (REQUIREMENTS M0–M8, ARCHITECTURE M1–M7, PLAN M1–M6). Use PLAN numbering.
+6. **Deployment smoke is pending.** Docker/Nginx/TLS execution has not been verified locally. The no-download browser gate does not substitute for a real container/proxy smoke.
 
 
 ## Tests
@@ -114,8 +116,11 @@ No implementation defects remain from the completed-chunk audit. Outstanding doc
 - **M6-C03:** Full backend suite passes (164 tests), including 100-sample fake-provider search/source-resolution benchmarks, 30 loopback relay first-byte samples, and the 128 MiB relay with 16 concurrent cancelled streams (4.0 MiB RSS growth, <48 MiB). Chromium confirms 39/100 lazy thumbnails requested before scrolling and loads card 90 when scrolled into view. Vite production entry JavaScript is 38.39 kB gzip (<250 kB). Source-cache TTL is configurable, default 60 seconds; per-IP cap remains 3 pending live-provider capacity evidence. Backend sessions remain N/A under O1/O10.
 - **M6-C04:** Added deployment packaging, HTTPS reverse-proxy configuration, read-only/non-root runtime settings, and `deploy/README.md`. Full backend suite passes (166 tests), including proxy Range/seek integration and shutdown transport-close assertion. Docker and Nginx executables are unavailable locally, so image build and real Nginx/TLS smoke remain unverified.
 - **M6-C05:** `tests.compliance.test_full_scenario` passes in Chromium: 10 unique searches, 100 distinct media played, 200 seeks, 100 ranged stream requests, 320 unique thumbnails fetched while scrolling, 0 browser storage/cookies, 0 filesystem-monitor violations, and no newly detected media/database/settings/cache artifacts. Security checklist completed with O6/O7/O8 limits explicit; CI now runs the scenario as a release-blocking check.
+- **M6-C06:** Documentation tests pass for local Markdown links, generated OpenAPI equality, and qualified privacy language. The API document is generated from `app.openapi()`; CI checks it is current. Runbook and privacy/security/deployment documents explicitly record missing provider wiring, O1/O10 session conflict, O6/O7/O8 gates, and unverified container/TLS validation.
 - Outstanding gates:
-  - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
+  - Live-provider operation and M3-C06 approved live smoke require O6 clearance and production provider wiring.
+  - Hosted/public release requires O6/O7/O8 resolution; provider-backed API functionality is not deployable until concrete provider wiring is implemented.
+  - Real Docker/Nginx/TLS Range/seek and shutdown smoke remains pending.
 - Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls, navigation, search), schema-drift check, storage-API lint.
 
 ## Open Decisions
@@ -124,21 +129,21 @@ O5 is resolved; other gates remain open and use their listed defaults until reso
 | Gate | Question | Blocks | Default |
 |---|---|---|---|
 | O5 | `playbackUrl` naming; stream relay-only; quality carried on `/source` | Resolved in M1-C01 and completed by M3-C04 | Adopt D10 |
-| O6 | Upstream terms, rate limits, permitted use | Live use in M2-C02, M3-C06 live smoke, any hosted release | Recorded fixtures only |
+| O6 | Upstream terms, rate limits, permitted use | Live use in M2-C02, M3-C06 live smoke, any hosted release | Recorded fixtures only; production provider wiring also remains absent |
 | O3 / O4 | Direct-vs-relay privacy trade-off; HLS in v1 | M2-C05, M3-C04 | Conservative classifier (relay default); MP4 only |
-| O1 / O10 | Backend sessions in v1? Privacy Mode behavior | M5-C04, M5-C08 | Frontend-only; Privacy Mode locked ON (see Known Issue 2) |
+| O1 / O10 | Backend sessions in v1? Privacy Mode behavior | M5-C04, M5-C08 | Frontend-only; Privacy Mode locked ON (see Known Issue 3) |
 | O12 | Browser support matrix | M4-C02 E2E | Latest evergreen desktop + mobile |
 | G2 | Multi-range `Range` header | M3-C02 | Treat as no Range |
 | G3 | Definition of "seen" | M5-C05 | Mark when playback begins |
 | G4 | Reporting path for `browser_player_errors` | M6-C02 | Not implemented |
 | O11 / O13 | Cache/session/limit values; metrics exposure | M6-C02, M6-C03 | Local cache/stream values recorded; backend session cap pending O1/O10; metrics stdout-only |
-| O7 / O8 | Hosted access control; audience gating | Hosted release | Private/trusted network only |
+| O7 / O8 | Hosted access control; audience gating | Hosted/public release | Private/trusted network only; hosted release is not approved |
 
 Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkable URLs).
 
 ## Last Handoff
 - **Date:** 2026-10-19
-- **Done:** Completed M6-C05 full no-download compliance and security review gate; the browser/filesystem scenario passes with zero persistence artifacts.
-- **Next:** M6-C06 documentation and operational runbook. Resolve the REQUIREMENTS/PLAN session-scope conflict before claiming full product-requirement compliance; M5-C08 remains conditional on O1/O10.
-- **Watch:** Live-provider use remains gated by O6. Preserve RAM-only metadata and no-browser-storage behavior unless O1/O10 is explicitly resolved.
+- **Done:** Completed M6-C06 documentation, generated API reference, operational runbook, and release checklist. Documentation tests and OpenAPI freshness check pass.
+- **Next:** M6 unconditional chunks are complete. Resolve O6 and implement/verify production provider wiring before live use; resolve O7/O8 before hosted/public release and O1/O10 before claiming full requirements compliance.
+- **Watch:** Real Docker/Nginx/TLS deployment smoke is pending. Preserve RAM-only browser state and avoid asserting stronger privacy guarantees than the qualified privacy statement.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

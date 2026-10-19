@@ -16,6 +16,7 @@ penetration test.
 | CORS and browser policy | PASS | `backend/tests/integration/test_security_headers.py` verifies exact-origin allow/deny, method/header preflight restrictions, and CSP/security headers on API and stream responses. Empty CORS configuration remains same-origin-only. |
 | Metadata XSS | PASS, scoped | `frontend/tests/e2e/xss_metadata_spec.py` renders hostile title, description, tag, and creator metadata as inert text under CSP and verifies no injected handler executes. |
 | No-download and browser persistence | PASS, automated gate | `tests/compliance/test_full_scenario.py` runs 10 unique searches, plays and seeks 100 distinct in-memory WebM items, scrolls 320 thumbnails, toggles a favorite, saves a search, checks browser storage/cookies, restarts the browser, and compares recursive media/database/settings scans while monitoring filesystem writes. The fixture remains in browser memory and API responses are intercepted locally. CI runs this test as a release-blocking stage. |
+| Production provider readiness | BLOCKED | `backend/app/main.py` does not install a concrete provider instance, and the production Compose configuration does not configure one. Provider-backed API routes are not operational in the packaged runtime until this wiring is implemented and verified. |
 
 ## Release limitations
 
@@ -30,6 +31,9 @@ penetration test.
   `REQUIREMENTS.md` conflict with the approved plan's conditional M5-C08 and
   frontend-only state default. Browser state is verified RAM-only; full
   requirements compliance must not be claimed until this scope is decided.
+- Provider-backed API operations are not ready in the production package:
+  `backend/app/main.py` does not attach a provider and Compose does not supply
+  one. This is separate from the still-open O6 provider-terms decision.
 - Docker/Nginx execution is not available in the local verification
   environment. M6-C04 verifies proxy configuration and loopback Range behavior,
   but a real container/TLS smoke remains a deployment prerequisite.
@@ -45,7 +49,8 @@ monitored project, temporary, and existing application-data roots. Media bytes
 were generated and retained in browser memory; API responses were intercepted
 in the test browser.
 
-**Gate decision:** Automated and repository-scoped controls above pass. Release
-is permitted only for private/trusted-network evaluation after O6 is cleared;
-hosted/public release remains blocked on O6 and O7/O8. No live provider
-credentials or media were used for this review.
+**Gate decision:** The automated, repository-scoped checks above pass where
+marked. The release is **not approved for live-provider operation** until O6
+and provider wiring are cleared. Hosted/public release additionally remains
+blocked on O7/O8. No live provider credentials or media were used for this
+review.

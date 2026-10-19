@@ -1,5 +1,13 @@
 # Private deployment
 
+> **Not ready for live use:** The current production FastAPI entry point does
+> not install a provider instance, and this Compose file has no provider
+> credential/configuration wiring. Provider-backed API routes will not work
+> until that wiring is implemented and verified. O6 (provider terms/rate
+> limits), O7 (hosted access control), and O8 (audience gating) also remain
+> release gates. This stack is private-network packaging, not approval for
+> public or live-provider deployment.
+
 The Compose stack builds the production frontend into an unprivileged Nginx
 image and runs the API in a separate, non-root Python image. The API port is
 only exposed to the private Compose network. Both container root filesystems
@@ -28,6 +36,10 @@ memory. No volume is used for media, thumbnails, or application state.
 Review the provider's terms and rate limits before live use. If the Compose
 network subnet conflicts with the host network, change the subnet and both
 fixed service addresses together, including `TRUSTED_PROXY_IPS`.
+
+For full operational checks, failure response, rollback, and remaining
+deployment-validation requirements, see the [runbook](../docs/runbook.md) and
+[upstream compliance checklist](../docs/upstream-compliance-checklist.md).
 
 The container build installs only the pinned backend runtime dependency set;
 test, browser-automation, and development packages are excluded.

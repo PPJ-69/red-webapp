@@ -82,6 +82,14 @@ jobs:
       - name: Verify compliance harness
         run: PYTHONPATH=. python -B -m unittest tests.compliance.test_harness_selfcheck -v
 
+      - name: Verify documentation
+        env:
+          APP_ENV: test
+          PYTHONPATH: .
+        run: |
+          python -B tools/docs/openapi_reference.py --check
+          python -B -m unittest tests.documentation.test_docs -v
+
       - name: Run dependency vulnerability scans
         run: |
           python -m pip install pip-audit
