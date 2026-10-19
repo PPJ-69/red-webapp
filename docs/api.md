@@ -20,8 +20,9 @@ defaults and validation limits are defined in OpenAPI.
 | `GET` | `/api/search` | Search or discovery with query, creator, tags, mode, order, and pagination. |
 | `GET` | `/api/creator/{username}` | Look up normalized creator metadata. |
 | `GET` | `/api/media/{media_id}` | Fetch normalized media metadata without resolved sources. |
-| `GET` | `/api/media/{media_id}/source` | Resolve a safe playback descriptor; quality is `auto`, `hd`, or `sd`. |
-| `GET` | `/api/stream/{media_id}` | Stream a media ID; accepts `Range` and optional `quality=auto|hd|sd`. |
+| `GET` | `/api/media/{media_id}/source` | Resolve a safe playback descriptor; quality is `auto`, `hd`, or `sd`, and `supportsHls` reports native browser capability. |
+| `GET` | `/api/stream/{media_id}` | Stream a media ID; accepts `Range` and optional `quality=auto|hd|sd` and `hls`. |
+| `GET` | `/api/stream/{media_id}/hls/{resource_token}` | Relay an opaque short-lived VOD HLS resource handle from a rewritten playlist. |
 | `GET` | `/api/tags/suggest` | Suggest tags for a query prefix. |
 
 The stream endpoint does not accept arbitrary URL parameters. A successful
@@ -30,6 +31,12 @@ responses use the API's normalized envelope where applicable. Provider-backed
 routes return `503 provider_unavailable` when no provider is configured. The
 default deployment keeps the provider disabled; see
 [architecture status](architecture.md#api-and-provider-state).
+
+HLS resource routes accept only server-issued opaque tokens and never accept
+upstream URLs. HLS is disabled by default. When enabled, unsupported live,
+encrypted, and low-latency playlists are never forwarded: playback falls back
+to MP4 when available, otherwise the API returns a normalized
+`unsupported_media` error.
 
 The source descriptor schema is intentionally public and excludes the
 provider's internal target and required upstream headers. Canonical response

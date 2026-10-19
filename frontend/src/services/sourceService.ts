@@ -16,12 +16,13 @@ export class SourceService {
     mediaId: string,
     quality: Quality,
     signal: AbortSignal,
+    supportsHls = false,
   ): Promise<MediaSource> {
     if (!mediaId.trim()) {
       throw new TypeError("A media ID is required.");
     }
     const source = await this.client.get<MediaSource>(
-      `/api/media/${encodeURIComponent(mediaId)}/source?quality=${quality}`,
+      `/api/media/${encodeURIComponent(mediaId)}/source?quality=${quality}&supportsHls=${supportsHls}`,
       { signal },
     );
     if (!isSafePlaybackUrl(source.playbackUrl)) {

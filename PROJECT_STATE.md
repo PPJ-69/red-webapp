@@ -1,11 +1,11 @@
 # Project State
 
 > Checkpoint only. Chain: REQUIREMENTS.md → ARCHITECTURE.md → IMPLEMENTATION_PLAN.md → this file → code + tests.
-> Milestone and chunk IDs use IMPLEMENTATION_PLAN numbering (6 milestones, 36 chunks).
+> Milestone and chunk IDs use IMPLEMENTATION_PLAN numbering (6 milestones, 35 v1 chunks plus 1 deferred optional chunk).
 
 ## Architecture Version
-- **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **35 of 36 chunks** (35 unconditional + 1 conditional).
+- **v1.4 — quality-preserving relay, frontend-only v1 state, and opt-in VOD HLS.** HLS playlists/resources use short-lived opaque relay handles; D16 resolves session scope and D17 records HLS boundaries.
+- Implementation progress: **35 v1 chunks complete; M5-C08 is deferred optional work.**
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
@@ -28,11 +28,11 @@
 - **M2-C02:** RedGIFs adapter + canonical media mapper using fixture-backed payloads; provider contract suite passes and raw upstream fields remain isolated behind canonical models.
 - **M2-C03:** Search/listing pipeline complete. Added query normalization, `/api/search` endpoint, provider-backed search service, and focused tests for normalization and API behavior. Targeted backend tests pass.
 - **M2-C04:** Creator lookup and tag-suggestion endpoints complete. Added backend creator/tag services, API routes, and validation tests using the existing fake provider.
-- **M2-C05:** Media resolver and source descriptor endpoint complete. Added source cache, resolver classification, `/api/media/{id}/source`, and integration/unit coverage.
+- **M2-C05:** Media resolver and source descriptor endpoint complete. Added source cache, resolver classification, `/api/media/{id}/source`, opt-in browser-capability-gated HLS selection with MP4 fallback, and integration/unit coverage.
 - **M3-C01:** Relay security guardrails complete. Added `UPSTREAM_ALLOWED_HOSTS`, strict HTTPS/private-range validation, and a focused validation unit suite that rejects allowlist violations and localhost/private targets.
 - **M3-C02:** Pure Range parsing and downstream response semantics complete. Added named tests for closed/open/suffix ranges, malformed and multi-range handling, upstream 200/206/416 behavior, safe response headers, and unknown/known object sizes.
 - **M3-C03:** Added a loopback-only Range-capable fake CDN, a 272-byte AVI fixture, bounded synthetic responses, status/latency/disconnect/auth/signature/header/range faults, connection counters, a shared test context manager, and fake-provider CDN targeting.
-- **M3-C04:** Added the ID-based range relay, bounded async HTTP transport, timeout/error handling, close-on-cancel behavior, source-resolution caching/invalidation, quality-preserving relay descriptors, and connect-time pinning to validated public IPs. The relay allowlist is strictly fail-closed when blank.
+- **M3-C04:** Added the ID-based range relay, bounded async HTTP transport, timeout/error handling, close-on-cancel behavior, source-resolution caching/invalidation, quality-preserving relay descriptors, connect-time pinning to validated public IPs, and opt-in VOD HLS manifest rewriting with opaque segment/init-map handles. The relay allowlist is strictly fail-closed when blank.
 - **M3-C05:** Added per-IP active-stream caps before source resolution, trusted-proxy-aware client IP derivation, local 429 error envelopes, slot release on completion/failure/cancellation, and request/bytes/first-byte/active/upstream-error metrics. Updated frontend error typing and mapping for `local_rate_limited`.
 - **M3-C06:** Added the development-only native-video page, test-only loopback CDN API, browser E2E for play/pause/seeking/failure retry/item switching, runtime browser/filesystem compliance assertions, and a 128 MiB concurrent/cancelled relay RSS test. The page is excluded from production output.
 - **M4-C01:** Added typed player states/events, strict transition validation, native-media-event mapping, an in-memory Svelte-compatible player store, restoration of play/pause intent across seeking and buffering, and RETRY/SKIP/NEXT/LOOP actions.
@@ -52,7 +52,7 @@
 - **M6-C03:** Added repeatable fake-provider/CDN latency checks, expanded the relay memory/cancellation scenario to sixteen concurrent cancelled streams, made the source-cache TTL configurable with a 60-second default, and verified production JS size plus viewport-driven thumbnail requests in Chromium. Local p95/memory/bundle targets pass; live-provider capacity and signed-URL lifetime remain unverified under O6.
 - **M6-C04:** Added a two-image production build (frontend assets in unprivileged Nginx; non-root Python API), read-only Compose services with externally mounted TLS files, Range-aware unbuffered proxying and trusted proxy identity. Added loopback proxy integration coverage for repeated Range/seek plus transport closure on application shutdown; actual Docker/Nginx execution remains unavailable in this environment.
 - **M6-C05:** Added a release-blocking browser/filesystem scenario and `docs/security-review.md`; the scenario exercises 10 unique searches, 100 distinct real playback sessions with 200 seeks and 100 Range requests, 320 scrolled thumbnails, favorites/save-search, browser restart, browser-storage/cookie checks, and recursive artifact scans while monitoring project/temp/app-data roots. CI runs the scenario. Local run found zero storage use, cookies, filesystem writes, or new artifacts; security checklist records O6 and O7/O8 deployment limits.
-- **M6-C06:** Added the project README, architecture/API/privacy references, operational runbook, and an O6/O7/O8 release checklist. Committed generated OpenAPI and CI checks for schema freshness, local Markdown links, and qualified privacy wording. Reconciled deployment/security wording and documented the backend-session scope conflict; no architecture or product decisions were changed.
+- **M6-C06:** Added the project README, architecture/API/privacy references, operational runbook, and an O6/O7/O8 release checklist. Committed generated OpenAPI and CI checks for schema freshness, local Markdown links, and qualified privacy wording. At chunk completion, documented the backend-session scope conflict without changing architecture or product decisions; the later D16 audit follow-up resolved that scope.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -60,21 +60,22 @@
 - **M2 Adapter & Resolution:** C01 auth + transport · C02 media lookup/mapper · C03 search · C04 creator + tags · C05 resolver + `/source`
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
-- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (done) · C06 app integration (done) · C07 a11y/E2E (done) · C08 backend sessions *(conditional; pending O1/O10)*
+- **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (done) · C06 app integration (done) · C07 a11y/E2E (done) · C08 backend sessions *(deferred optional; not required for v1)*
 - **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit (done) · C03 load tuning (done) · C04 deploy/proxy (done) · C05 full no-download compliance/security review (done) · C06 docs/runbook (done)
 
 Hard gates: M6-C05's no-download scenario passes locally and runs as a release-blocking CI stage. Live-provider operation is gated on O6 and live verification of the opt-in wiring; hosted/public release remains blocked by O6/O7/O8. Real Docker/Nginx/TLS smoke remains outstanding.
 
 ## Important Architecture Decisions
-- **Stream, don't store.** No DB, media or thumbnail cache, or persisted app state. RAM-only, TTL-bound.
+- **Stream, don't store.** No DB, media or thumbnail cache, or persisted app state. Auth/source caches are RAM-only and TTL-bound; user session state lives in frontend RAM and is lost on reload (D16).
 - Backend owns provider auth. Tokens and signed upstream details never reach the browser or logs.
 - Provider interface + RedGIFs adapter isolate all upstream shapes (D2, D3).
 - Media Resolver is the reliability boundary. `/api/media/{id}/source` is the only place direct-vs-relay is communicated (`playbackUrl`). `/api/stream/{id}` is relay-only, accepts only a validated quality enum (never an upstream URL), and does not redirect (D10).
 - Relay: bounded chunks, single Range, 200/206/416, upstream aborted on client disconnect, host allowlist + private-IP rejection with DNS address pinning, concurrency caps. Basic security pulled forward into M3 (D5, D14).
 - Short-TTL RAM source cache in the resolver (D9).
-- MP4-first; HLS behind a flag and deferred (D11). Kill switches: `ENABLE_DIRECT_MEDIA`, `ENABLE_HLS`.
+- `ENABLE_HLS` defaults off; when enabled, native-HLS-capable browsers may use supported VOD playlists through the bounded opaque-resource relay. Unsupported live/event, encrypted, and low-latency playlists fail explicitly; MP4 remains the fallback (D17).
 - Native `<video>`; player store derives state from video events (D1).
 - Frontend is authoritative for favorites/seen/history in v1, behind a `Store` interface; no browser storage APIs (D7, D8).
+- Backend session endpoints are optional future functionality and are not required in v1; Privacy Mode stays locked ON (D16).
 - POC-first ordering; compliance harness runs in CI from M1.
 - Same-origin deployment by default (D12).
 - Browser documents and backend responses receive restrictive CSP/security headers; CORS remains same-origin unless exact origins are explicitly configured. Development-only Vite CSP permits eval for test tooling; production headers remain strict.
@@ -83,12 +84,9 @@ Hard gates: M6-C05's no-download scenario passes locally and runs as a release-b
 - Metrics remain process-local, unlabeled, and stdout-only; `metrics_snapshot` logs the complete snapshot at graceful shutdown. `direct_vs_relay_ratio` reports the direct fraction of successful uncached source classifications; G4's `browser_player_errors` remains excluded.
 
 ## Known Issues and Release Blockers
-1. **Live provider integration remains unverified.** Provider construction is now opt-in through `UPSTREAM_PROVIDER=redgifs`, backed by a mounted token file; the base Compose stack stays disabled and startup makes no provider call. O6 and approved live verification remain required before operation.
-2. **Requirement references drift.** ARCHITECTURE and PLAN cite sections through roughly 70 (including error taxonomy, session TTLs, and metrics), while REQUIREMENTS.md has 29 sections. The documented acceptance criteria cannot be traced reliably to the current requirements.
-3. **Session scope conflicts with product requirements.** REQUIREMENTS.md calls for `/api/session*` endpoints and session identification/TTL/cleanup. The approved plan makes the backend service conditional (M5-C08) and defaults to frontend-only state. Current code follows the plan default, so it does not implement the session API/cleanup described by REQUIREMENTS. O1/O10 must be explicitly resolved before claiming full requirements compliance; do not add M5-C08 without that decision.
-4. **Repo layout differs.** REQUIREMENTS §25 (`api/providers/streaming/sessions/models`) vs PLAN (`domain/upstream/services/security/observability`). REQUIREMENTS allows changes; use the approved PLAN layout unless the architecture is explicitly revised.
-5. **Milestone numbering differs** across docs (REQUIREMENTS M0–M8, ARCHITECTURE M1–M7, PLAN M1–M6). Use PLAN numbering.
-6. **Deployment smoke is pending.** Docker/Nginx/TLS execution has not been verified locally. The no-download browser gate does not substitute for a real container/proxy smoke.
+1. **Live provider integration remains unverified.** Provider construction is now opt-in through `UPSTREAM_PROVIDER=redgifs`, backed by a mounted token file; the base Compose stack stays disabled and startup makes no provider call. O6 and approved live verification remain required before operation, including validation of real HLS source and authorization behavior.
+2. **Repository layout and milestone numbering are intentional reconciliations.** REQUIREMENTS §25 describes a suggested layout that explicitly permits architecture-approved changes; the approved PLAN layout is in use. REQUIREMENTS M0–M8, ARCHITECTURE M1–M7, and PLAN M1–M6 are different planning decompositions; use PLAN numbering for implementation tracking.
+3. **Deployment smoke is pending.** Docker/Nginx/TLS execution has not been verified locally. The no-download browser gate does not substitute for a real container/proxy smoke.
 
 
 ## Tests
@@ -113,10 +111,10 @@ Hard gates: M6-C05's no-download scenario passes locally and runs as a release-b
 - **Completed-chunk audit (2026-10-19):** Backend suite passes (148 tests); frontend Svelte check has 0 warnings/errors, 164 Vitest tests pass, storage/lock/schema checks pass, and production build succeeds. All 15 browser E2E tests pass. All 7 compliance harness tests and browser-monitor self-check pass; idle backend boot reports zero writes. Audit fixes restored disabled CI suites, reintroduced mobile/infinite-scroll coverage, wired search pagination into the UI, fixed POC failure-fixture metadata, and removed redundant dialog/autofocus warnings.
 - **M6-C01:** Full backend suite passes (153 tests), including explicit CORS origin/method/header allow/deny coverage and security-header assertions on API/stream responses. All 164 frontend unit tests, Svelte check, and production build pass. All 16 Chromium E2E tests pass, including hostile metadata rendering and static-document header assertions; production preview serves the strict CSP without `unsafe-eval`.
 - **M6-C02:** Full backend CI suite passes (160 tests). Added canary leak scenarios for upstream 401/403/429, stream timeout and disconnect, and malformed provider data; verifies credentials, signed URL query values, cookies, and session contents appear neither in logs nor metric labels. Verified the shutdown JSON metrics snapshot and direct/relay ratio calculations.
-- **M6-C03:** Full backend suite passes (164 tests), including 100-sample fake-provider search/source-resolution benchmarks, 30 loopback relay first-byte samples, and the 128 MiB relay with 16 concurrent cancelled streams (4.0 MiB RSS growth, <48 MiB). Chromium confirms 39/100 lazy thumbnails requested before scrolling and loads card 90 when scrolled into view. Vite production entry JavaScript is 38.39 kB gzip (<250 kB). Source-cache TTL is configurable, default 60 seconds; per-IP cap remains 3 pending live-provider capacity evidence. Backend sessions remain N/A under O1/O10.
+- **M6-C03:** Full backend suite passes (164 tests), including 100-sample fake-provider search/source-resolution benchmarks, 30 loopback relay first-byte samples, and the 128 MiB relay with 16 concurrent cancelled streams (4.0 MiB RSS growth, <48 MiB). Chromium confirms 39/100 lazy thumbnails requested before scrolling and loads card 90 when scrolled into view. Vite production entry JavaScript is 38.39 kB gzip (<250 kB). Source-cache TTL is configurable, default 60 seconds; per-IP cap remains 3 pending live-provider capacity evidence. Backend sessions are not part of v1 (D16).
 - **M6-C04:** Added deployment packaging, HTTPS reverse-proxy configuration, read-only/non-root runtime settings, and `deploy/README.md`. Full backend suite passes (166 tests), including proxy Range/seek integration and shutdown transport-close assertion. Docker and Nginx executables are unavailable locally, so image build and real Nginx/TLS smoke remain unverified.
 - **M6-C05:** `tests.compliance.test_full_scenario` passes in Chromium: 10 unique searches, 100 distinct media played, 200 seeks, 100 ranged stream requests, 320 unique thumbnails fetched while scrolling, 0 browser storage/cookies, 0 filesystem-monitor violations, and no newly detected media/database/settings/cache artifacts. Security checklist completed with O6/O7/O8 limits explicit; CI now runs the scenario as a release-blocking check.
-- **M6-C06 follow-up:** Added opt-in production provider construction from a read-only token file, default-disabled Compose configuration, an explicit provider overlay, 503 behavior when disabled, and graceful provider transport cleanup. Startup and secret-rotation tests use local files only; no live provider calls are made. Documentation tests pass for local Markdown links, generated OpenAPI equality, and qualified privacy language; runbook, privacy/security/deployment docs retain O6/O7/O8 and O1/O10 gates.
+- **M6-C06 follow-up:** Added opt-in production provider construction from a read-only token file, default-disabled Compose configuration, an explicit provider overlay, 503 behavior when disabled, and graceful provider transport cleanup. Startup and secret-rotation tests use local files only; no live provider calls are made. Documentation tests pass for local Markdown links, generated OpenAPI equality, qualified privacy language, and current requirement citations; runbook, privacy/security/deployment docs retain O6/O7/O8 gates. D16 resolves O1/O10 as frontend-only RAM state.
 - Outstanding gates:
   - Live-provider operation and M3-C06 approved live smoke require O6 clearance and approved live verification of the opt-in provider wiring.
   - Hosted/public release requires O6/O7/O8 resolution; provider-backed API functionality remains unverified until approved live integration validation.
@@ -124,26 +122,26 @@ Hard gates: M6-C05's no-download scenario passes locally and runs as a release-b
 - Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls, navigation, search), schema-drift check, storage-API lint.
 
 ## Open Decisions
-O5 is resolved; other gates remain open and use their listed defaults until resolved.
+O1/O4/O5/O10 are resolved; other gates remain open and use their listed defaults until resolved.
 
 | Gate | Question | Blocks | Default |
 |---|---|---|---|
 | O5 | `playbackUrl` naming; stream relay-only; quality carried on `/source` | Resolved in M1-C01 and completed by M3-C04 | Adopt D10 |
 | O6 | Upstream terms, rate limits, permitted use | Live use in M2-C02, M3-C06 live smoke, any hosted release | Recorded fixtures only; opt-in provider wiring is unverified against live service |
-| O3 / O4 | Direct-vs-relay privacy trade-off; HLS in v1 | M2-C05, M3-C04 | Conservative classifier (relay default); MP4 only |
-| O1 / O10 | Backend sessions in v1? Privacy Mode behavior | M5-C04, M5-C08 | Frontend-only; Privacy Mode locked ON (see Known Issue 3) |
+| O3 | Direct-vs-relay privacy trade-off | M2-C05, M3-C04 | Conservative classifier (relay default); HLS resources are relay-only |
+| O1 / O10 | Backend sessions in v1? Privacy Mode behavior | Resolved; M5-C08 deferred optional | Frontend-only RAM state, lost on reload; Privacy Mode locked ON (D16) |
 | O12 | Browser support matrix | M4-C02 E2E | Latest evergreen desktop + mobile |
 | G2 | Multi-range `Range` header | M3-C02 | Treat as no Range |
 | G3 | Definition of "seen" | M5-C05 | Mark when playback begins |
 | G4 | Reporting path for `browser_player_errors` | M6-C02 | Not implemented |
-| O11 / O13 | Cache/session/limit values; metrics exposure | M6-C02, M6-C03 | Local cache/stream values recorded; backend session cap pending O1/O10; metrics stdout-only |
+| O11 / O13 | Cache/limit values; metrics exposure | M6-C02, M6-C03 | Local cache/stream values recorded; no v1 backend session cap; metrics stdout-only |
 | O7 / O8 | Hosted access control; audience gating | Hosted/public release | Private/trusted network only; hosted release is not approved |
 
 Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkable URLs).
 
 ## Last Handoff
 - **Date:** 2026-10-19
-- **Done:** Completed M6-C06 documentation, generated API reference, operational runbook, and release checklist. Documentation tests and OpenAPI freshness check pass.
-- **Next:** M6 unconditional chunks are complete. Resolve O6 and verify the opt-in provider wiring with an approved live integration before live use; resolve O7/O8 before hosted/public release and O1/O10 before claiming full requirements compliance.
-- **Watch:** Real Docker/Nginx/TLS deployment smoke is pending. Preserve RAM-only browser state and avoid asserting stronger privacy guarantees than the qualified privacy statement.
+- **Done:** Completed the requirements/drift audit follow-up: opt-in VOD HLS now rejects unsupported playlists, uses the supported MP4 fallback when available, and reports `unsupported_media` otherwise. Regenerated OpenAPI; backend suite passes (190 tests), frontend unit suite passes (165 tests), Svelte check and production build pass, and documentation tests pass (4 tests).
+- **Next:** M6 v1 chunks are complete. Resolve O6 and verify the opt-in provider wiring with an approved live integration before live use; resolve O7/O8 before hosted/public release.
+- **Watch:** Real Docker/Nginx/TLS deployment smoke is pending. Live-provider operation remains unverified; preserve RAM-only browser state and avoid asserting stronger privacy guarantees than the qualified privacy statement.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.

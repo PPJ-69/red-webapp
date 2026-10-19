@@ -11,6 +11,7 @@ services:
       TRUSTED_PROXY_IPS: 172.30.0.2/32
       MAX_ACTIVE_STREAMS_PER_IP: ${MAX_ACTIVE_STREAMS_PER_IP:-3}
       SOURCE_CACHE_TTL_SECONDS: ${SOURCE_CACHE_TTL_SECONDS:-60}
+      ENABLE_HLS: ${ENABLE_HLS:-false}
     expose:
       - "8000"
     healthcheck:

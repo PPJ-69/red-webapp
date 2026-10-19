@@ -9,9 +9,9 @@ T = TypeVar("T")
 class SourceCache(Generic[T]):
     def __init__(self, ttl_seconds: float = 300.0) -> None:
         self.ttl_seconds = ttl_seconds
-        self._entries: dict[tuple[str, str], tuple[float, T]] = {}
+        self._entries: dict[tuple[str, ...], tuple[float, T]] = {}
 
-    def get(self, key: tuple[str, str]) -> T | None:
+    def get(self, key: tuple[str, ...]) -> T | None:
         entry = self._entries.get(key)
         if entry is None:
             return None
@@ -21,10 +21,10 @@ class SourceCache(Generic[T]):
             return None
         return value
 
-    def set(self, key: tuple[str, str], value: T) -> None:
+    def set(self, key: tuple[str, ...], value: T) -> None:
         self._entries[key] = (time.monotonic() + self.ttl_seconds, value)
 
-    def delete(self, key: tuple[str, str]) -> None:
+    def delete(self, key: tuple[str, ...]) -> None:
         self._entries.pop(key, None)
 
     def clear(self) -> None:

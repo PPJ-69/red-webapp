@@ -18,6 +18,7 @@ class MediaResolverTests(unittest.IsolatedAsyncioTestCase):
         app.state.settings = Settings(
             AppEnvironment.TEST,
             source_cache_ttl_seconds=45.5,
+            enable_hls=True,
         )
         app.state.upstream_provider = FakeMediaProvider()
         request = Request({"type": "http", "app": app})
@@ -26,6 +27,7 @@ class MediaResolverTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(resolver.cache.ttl_seconds, 45.5)
         self.assertEqual(resolver._resolution_cache.ttl_seconds, 45.5)
+        self.assertTrue(resolver._enable_hls)
 
     async def test_resolve_returns_public_source_descriptor(self) -> None:
         resolver = MediaResolver(FakeMediaProvider())
@@ -115,6 +117,43 @@ class MediaResolverTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue(source.requires_relay)
         self.assertTrue(source.requires_relay)
+
+    async def test_hls_is_opt_in_browser_gated_and_always_relayed(self) -> None:
+        class FormatProvider(FakeMediaProvider):
+            async def resolve_source(
+                self,
+                media_id: str,
+                quality: str,
+                *,
+                prefer_hls: bool = False,
+            ) -> InternalSourceTarget:
+                if prefer_hls:
+                    return InternalSourceTarget(
+                        url="https://cdn.example.invalid/master.m3u8",
+                        mime_type="application/vnd.apple.mpegurl",
+                    )
+                return InternalSourceTarget(
+                    url="https://cdn.example.invalid/video.mp4",
+                    mime_type="video/mp4",
+                )
+
+        resolver = MediaResolver(FormatProvider(), enable_hls=True)
+        with patch.dict("os.environ", {"ENABLE_DIRECT_MEDIA": "true"}):
+            hls = await resolver.resolve(
+                "sample-media", supports_hls=True
+            )
+            mp4 = await resolver.resolve("sample-media", supports_hls=False)
+
+        self.assertTrue(hls.requires_relay)
+        self.assertEqual(
+            hls.mime_type, "application/vnd.apple.mpegurl"
+        )
+        self.assertEqual(
+            hls.playback_url,
+            "/api/stream/sample-media?quality=auto&hls=1",
+        )
+        self.assertFalse(mp4.requires_relay)
+        self.assertEqual(mp4.mime_type, "video/mp4")
     async def test_records_direct_and_relay_resolution_share(self) -> None:
         class HeaderlessProvider(FakeMediaProvider):
             async def resolve_source(

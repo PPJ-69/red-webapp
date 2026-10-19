@@ -20,6 +20,9 @@ DOCUMENTS = (
     ROOT / "deploy" / "README.md",
 )
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
+REQUIREMENT_CITATION = re.compile(
+    r"§{1,2}\s*(\d+(?:\s*[-–]\s*\d+)?(?:\s*,\s*\d+(?:\s*[-–]\s*\d+)?)*)"
+)
 OVERCLAIM_PATTERNS = (
     re.compile(r"\bno data is ever stored\b", re.IGNORECASE),
     re.compile(r"\bnothing is ever stored\b", re.IGNORECASE),
@@ -56,6 +59,34 @@ class DocumentationTests(unittest.TestCase):
             generated_openapi(),
             "docs/openapi.json is stale; run tools/docs/openapi_reference.py.",
         )
+
+    def test_architecture_and_plan_requirement_citations_exist(self) -> None:
+        requirements = (ROOT / "REQUIREMENTS.md").read_text(encoding="utf-8")
+        requirement_sections = {
+            int(match.group(1))
+            for match in re.finditer(
+                r"^##\s+(\d+)\.",
+                requirements,
+                re.MULTILINE,
+            )
+        }
+        invalid: list[str] = []
+        source_documents = (
+            ROOT / "ARCHITECTURE.md",
+            ROOT / "IMPLEMENTATION_PLAN.md",
+        )
+        for document in source_documents:
+            content = document.read_text(encoding="utf-8")
+            for citation in REQUIREMENT_CITATION.findall(content):
+                for part in citation.split(","):
+                    bounds = re.split(r"\s*[-–]\s*", part.strip())
+                    start, end = int(bounds[0]), int(bounds[-1])
+                    invalid.extend(
+                        f"{document.relative_to(ROOT)}: §{section}"
+                        for section in range(start, end + 1)
+                        if section not in requirement_sections
+                    )
+        self.assertEqual(invalid, [], "Invalid requirements citations: " + "; ".join(invalid))
 
     def test_privacy_statement_uses_qualified_claims(self) -> None:
         documents = [

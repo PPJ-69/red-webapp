@@ -90,16 +90,17 @@ async def stream_media(
     request: Request,
     range_header: str | None = Header(default=None, alias="Range"),
     quality: str = Query(default="auto", pattern=r"^(auto|hd|sd)$"),
+    hls: bool = Query(default=False),
     service: StreamService = Depends(get_stream_service),
     limiter: StreamLimiter = Depends(get_stream_limiter),
 ) -> StreamingResponse:
     registry = getattr(request.app.state, "metrics", metrics)
     registry.increment("stream_requests_total")
     started_at = time.perf_counter()
-    if set(request.query_params) - {"quality"}:
+    if set(request.query_params) - {"quality", "hls"}:
         raise ApplicationError(
             ErrorCategory.INVALID_REQUEST,
-            "Only the quality selector is accepted as a query parameter.",
+            "Only quality and the HLS selector are accepted as query parameters.",
         )
     settings = getattr(request.app.state, "settings", None)
     trusted_proxies = settings.trusted_proxy_ips if settings is not None else ()
@@ -108,7 +109,59 @@ async def stream_media(
     response_created = False
     try:
         try:
-            relay = await service.stream(media_id, range_header, quality)
+            if hls:
+                relay = await service.stream(
+                    media_id, range_header, quality, supports_hls=True
+                )
+            else:
+                relay = await service.stream(media_id, range_header, quality)
+        except ApplicationError as exc:
+            if exc.category in _UPSTREAM_ERROR_CATEGORIES:
+                registry.increment("stream_upstream_errors_total")
+            raise
+        except Exception:
+            registry.increment("stream_upstream_errors_total")
+            raise
+        headers = dict(relay.headers)
+        headers["cache-control"] = "no-store"
+        headers.setdefault("x-content-type-options", "nosniff")
+        response = _RelayStreamingResponse(
+            relay, headers, lease, registry, started_at
+        )
+        response_created = True
+        return response
+    finally:
+        if not response_created:
+            lease.release()
+
+
+@router.get("/api/stream/{media_id}/hls/{resource_token}")
+async def stream_hls_resource(
+    media_id: str,
+    resource_token: str,
+    request: Request,
+    range_header: str | None = Header(default=None, alias="Range"),
+    service: StreamService = Depends(get_stream_service),
+    limiter: StreamLimiter = Depends(get_stream_limiter),
+) -> StreamingResponse:
+    if request.query_params:
+        raise ApplicationError(
+            ErrorCategory.INVALID_REQUEST,
+            "HLS resource requests do not accept query parameters.",
+        )
+    registry = getattr(request.app.state, "metrics", metrics)
+    registry.increment("stream_requests_total")
+    started_at = time.perf_counter()
+    settings = getattr(request.app.state, "settings", None)
+    trusted_proxies = settings.trusted_proxy_ips if settings is not None else ()
+    client_ip = client_ip_for_request(request, trusted_proxies)
+    lease = limiter.acquire(client_ip)
+    response_created = False
+    try:
+        try:
+            relay = await service.stream_hls_resource(
+                media_id, resource_token, range_header
+            )
         except ApplicationError as exc:
             if exc.category in _UPSTREAM_ERROR_CATEGORIES:
                 registry.increment("stream_upstream_errors_total")

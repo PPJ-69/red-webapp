@@ -566,6 +566,16 @@
               "title": "Quality",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "supportsHls",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Supportshls",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -761,6 +771,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "hls",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Hls",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "Range",
             "required": false,
@@ -798,6 +818,71 @@
           }
         },
         "summary": "Stream Media",
+        "tags": [
+          "stream"
+        ]
+      }
+    },
+    "/api/stream/{media_id}/hls/{resource_token}": {
+      "get": {
+        "operationId": "stream_hls_resource_api_stream__media_id__hls__resource_token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "title": "Media Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "resource_token",
+            "required": true,
+            "schema": {
+              "title": "Resource Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Range",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream Hls Resource",
         "tags": [
           "stream"
         ]

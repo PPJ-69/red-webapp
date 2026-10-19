@@ -22,7 +22,7 @@ class UpstreamMediaProvider(Protocol):
     async def suggest_tags(self, query: str) -> list[str]: ...
 
     async def resolve_source(
-        self, media_id: str, quality: str
+        self, media_id: str, quality: str, *, prefer_hls: bool = False
     ) -> InternalSourceTarget: ...
 
 

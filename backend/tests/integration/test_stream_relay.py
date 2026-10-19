@@ -483,7 +483,7 @@ class StreamRelayIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(
             {parameter.name for parameter in route.dependant.query_params},
-            {"quality"},
+            {"quality", "hls"},
         )
 
     def test_arbitrary_url_query_is_rejected_before_resolution(self) -> None:

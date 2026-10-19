@@ -92,11 +92,22 @@ class FakeMediaProvider:
         return [tag for tag in self._media.tags if tag.casefold().startswith(prefix)]
 
     async def resolve_source(
-        self, media_id: str, quality: str
+        self, media_id: str, quality: str, *, prefer_hls: bool = False
     ) -> InternalSourceTarget:
         self._raise_configured_fault("resolve_source")
         if media_id != self._media.id:
             raise ApplicationError(ErrorCategory.NOT_FOUND, "The requested media was not found.")
+        if prefer_hls:
+            hls_url = (
+                f"{self._cdn_base_url}/hls/master.m3u8"
+                if self._cdn_base_url is not None
+                else "https://cdn.example.invalid/hls/master.m3u8"
+            )
+            return InternalSourceTarget(
+                url=hls_url,
+                headers={"X-Fake-Provider": "test"},
+                mime_type="application/vnd.apple.mpegurl",
+            )
         if self._cdn_base_url is not None:
             return InternalSourceTarget(
                 url=(

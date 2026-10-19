@@ -29,10 +29,8 @@ credentials or signed media URLs in this document.
   application access control; the per-IP stream cap is not authentication.
 - **O8 — Audience gating:** Resolve the product/legal audience policy and
   implement any required gating before hosted use.
-- **O1/O10 — Session scope:** Resolve the requirements for temporary anonymous
-  backend sessions against the approved frontend-only RAM state default.
-  Current backend session routes are absent; full requirements compliance
-  cannot be claimed.
+- **O1/O10 — Session scope (resolved):** V1 state is frontend RAM-only and
+  backend session routes are optional future functionality (D16).
 - **Provider wiring:** The opt-in RedGIFs provider construction and mounted
   token-file path are implemented. Validate them with an approved live
   integration after O6 clearance; the default Compose stack keeps the

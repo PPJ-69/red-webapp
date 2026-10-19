@@ -20,6 +20,21 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.source_cache_ttl_seconds, 60.0)
         self.assertEqual(settings.trusted_proxy_ips, ())
         self.assertEqual(settings.cors_allowed_origins, ())
+        self.assertFalse(settings.enable_hls)
+
+    def test_hls_is_disabled_by_default_and_requires_a_boolean(self) -> None:
+        enabled = Settings.from_environment(
+            {"APP_ENV": "test", "ENABLE_HLS": "yes"}
+        )
+        self.assertTrue(enabled.enable_hls)
+        disabled = Settings.from_environment(
+            {"APP_ENV": "test", "ENABLE_HLS": "0"}
+        )
+        self.assertFalse(disabled.enable_hls)
+        with self.assertRaisesRegex(ConfigurationError, "ENABLE_HLS"):
+            Settings.from_environment(
+                {"APP_ENV": "test", "ENABLE_HLS": "sometimes"}
+            )
 
     def test_provider_configuration_is_opt_in_and_requires_secret_file(self) -> None:
         settings = Settings.from_environment(

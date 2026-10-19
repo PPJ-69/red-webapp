@@ -112,6 +112,6 @@ The source-cache default is now 60 seconds and can be tuned with
 `SOURCE_CACHE_TTL_SECONDS`. This shortens the previous five-minute stale-source
 window; the fake-provider uncached-resolution p95 remains below target. The
 provider's actual signed-URL lifetime is unverified while O6 remains open, so
-the default remains configurable and must be revisited before live use. A
-backend session cap is not applicable: backend sessions remain unimplemented
-pending O1/O10; do not add a limit without resolving that scope gate.
+the default remains configurable and must be revisited before live use. No
+backend session cap applies to v1 because session state is frontend RAM-only
+and backend session endpoints are optional future functionality (D16).

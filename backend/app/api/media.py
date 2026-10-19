@@ -23,6 +23,7 @@ async def get_media(
 async def resolve_media_source(
     media_id: str,
     quality: str = Query(default="auto", pattern=r"^(auto|hd|sd)$"),
+    supports_hls: bool = Query(default=False, alias="supportsHls"),
     resolver: MediaResolver = Depends(get_media_resolver),
 ) -> MediaSource:
-    return await resolver.resolve(media_id, quality)
+    return await resolver.resolve(media_id, quality, supports_hls)

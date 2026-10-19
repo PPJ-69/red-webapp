@@ -80,6 +80,7 @@ class HealthStatus(ApiModel):
 class InternalSourceTarget:
     url: str
     headers: Mapping[str, str] = field(default_factory=dict)
+    mime_type: str | None = None
 
 
 @dataclass(frozen=True)

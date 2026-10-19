@@ -20,7 +20,11 @@ class _GatedService:
         self.calls = 0
 
     async def stream(
-        self, media_id: str, client_range: str | None, quality: str = "auto"
+        self,
+        media_id: str,
+        client_range: str | None,
+        quality: str = "auto",
+        supports_hls: bool = False,
     ) -> RelayResponse:
         self.calls += 1
 
@@ -37,7 +41,11 @@ class _GatedService:
 
 class _FailingService:
     async def stream(
-        self, media_id: str, client_range: str | None, quality: str = "auto"
+        self,
+        media_id: str,
+        client_range: str | None,
+        quality: str = "auto",
+        supports_hls: bool = False,
     ) -> RelayResponse:
         raise ApplicationError(
             ErrorCategory.UPSTREAM_TIMEOUT,
@@ -203,6 +211,7 @@ async def _stream_request(app, service, limiter, media_id: str):
         _request(app),
         range_header=None,
         quality="auto",
+        hls=False,
         service=service,
         limiter=limiter,
     )

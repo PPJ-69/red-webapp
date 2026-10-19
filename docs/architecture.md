@@ -19,6 +19,15 @@ against `UPSTREAM_ALLOWED_HOSTS`, uses bounded async streaming, supports
 single byte ranges, and returns `Cache-Control: no-store`. Provider
 authentication and internal source targets must remain server-side.
 
+When `ENABLE_HLS=true`, the source resolver selects a VOD HLS source only
+when the browser reports native HLS support. Same-origin playlist rewriting
+issues short-lived opaque resource handles for nested playlists, media
+segments, and initialization maps. Each referenced upstream URL is retained
+server-side and validated when fetched; privileged headers are not forwarded
+across origins. Live/event, encrypted, low-latency, and other unsupported
+URI-bearing playlist features are never forwarded; playback falls back to
+MP4 when available and returns `unsupported_media` when it is not.
+
 The browser owns search and player UI state, favorites, seen IDs, history, and
 settings in RAM. State is lost on reload. Privacy Mode is locked ON. No
 backend session API or browser persistence layer is currently implemented.
@@ -35,12 +44,10 @@ provider request. The explicit deployment overlay is
 against the live provider and does not resolve O6. Do not mistake a healthy
 process or successful image build for a usable live-provider deployment.
 
-The requirements document includes `/api/session*` endpoints and temporary
-anonymous session behavior. The approved implementation plan makes the
-backend session service conditional, while the implementation uses frontend
-RAM state only. This unresolved O1/O10 conflict is recorded in
-`PROJECT_STATE.md`; this documentation does not resolve it or claim full
-requirements compliance.
+V1 temporary session state lives only in frontend RAM and is lost on page
+reload. Backend `/api/session*` endpoints are optional future functionality,
+not part of the v1 API or architecture (D16). No backend session routes are
+implemented.
 
 ## Security and operational boundaries
 

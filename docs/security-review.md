@@ -27,10 +27,8 @@ penetration test.
 - O7/O8 remain unresolved: hosted access control and audience gating are not
   implemented. This review does not approve public or untrusted-network
   deployment.
-- O1/O10 remain unresolved: backend session endpoints required by portions of
-  `REQUIREMENTS.md` conflict with the approved plan's conditional M5-C08 and
-  frontend-only state default. Browser state is verified RAM-only; full
-  requirements compliance must not be claimed until this scope is decided.
+- O1/O10 are resolved: v1 state is frontend RAM-only and is lost on reload;
+  backend session endpoints are optional future functionality (D16).
 - Provider wiring is implemented but remains opt-in and has not been tested
   against the live service. The base Compose stack leaves it disabled; this
   does not resolve O6 or establish live-provider readiness.

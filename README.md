@@ -17,9 +17,12 @@ check. This does not make the current production package ready for live use:
   been verified.
 - Upstream terms, rate limits, and permitted use (O6) have not been cleared.
 - Hosted access control and audience gating (O7/O8) are not implemented.
-- Backend session endpoints in `REQUIREMENTS.md` conflict with the approved
-  frontend-only RAM state default (O1/O10); do not claim full requirements
-  compliance.
+- V1 session state is held in frontend RAM and lost on reload. Backend
+  session endpoints are optional future functionality, not a v1 requirement
+  (D16).
+- VOD HLS is opt-in and requires browser-native HLS support. Live/event,
+  encrypted, and low-latency playlists are rejected; MP4 remains the fallback
+  (D17).
 - A real Docker/Nginx/TLS smoke has not been run in the local environment.
 
 Do not use live provider credentials or deploy to the public internet until the

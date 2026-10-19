@@ -2,10 +2,18 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any
+from urllib.parse import urlsplit
 
 from backend.app.domain.enums import ErrorCategory
 from backend.app.domain.errors import ApplicationError
-from backend.app.domain.models import Creator, InternalSourceTarget, MediaItem, SearchQuery, SearchResult
+from backend.app.domain.models import (
+    Creator,
+    InternalSourceTarget,
+    MediaItem,
+    MediaSource,
+    SearchQuery,
+    SearchResult,
+)
 
 from .auth import AuthManager
 from .mapper import normalize_creator, normalize_media_item, normalize_search_result
@@ -111,23 +119,54 @@ class RedgifsClient:
             return [str(tag) for tag in tags if str(tag)]
         return []
 
-    async def resolve_source(self, media_id: str, quality: str) -> InternalSourceTarget:
+    async def resolve_source(
+        self, media_id: str, quality: str, *, prefer_hls: bool = False
+    ) -> InternalSourceTarget:
         item = await self.get_media(media_id)
-        preferred = None
+        hls_sources = [source for source in item.sources if _is_hls_source(source)]
+        mp4_sources = [source for source in item.sources if _is_mp4_source(source)]
+        candidates = hls_sources if prefer_hls and hls_sources else mp4_sources
         quality_name = (quality or "auto").lower()
-        for source in item.sources:
-            if quality_name == "auto":
-                preferred = source
-                break
-            rendered = source.playback_url.lower()
-            if quality_name in rendered:
-                preferred = source
-                break
-        if preferred is None and item.sources:
-            preferred = item.sources[0]
+        preferred = next(
+            (
+                source
+                for source in candidates
+                if quality_name == "auto"
+                or quality_name in source.playback_url.lower()
+            ),
+            candidates[0] if candidates else None,
+        )
         if preferred is None:
             raise ApplicationError(
                 ErrorCategory.UNSUPPORTED_MEDIA,
-                "RedGIFs did not expose a usable source for this media item.",
+                "RedGIFs did not expose a supported MP4 or HLS VOD source.",
             )
-        return InternalSourceTarget(url=preferred.playback_url, headers={})
+        return InternalSourceTarget(
+            url=preferred.playback_url,
+            headers={},
+            mime_type=_source_mime_type(preferred),
+        )
+
+
+def _source_mime_type(source: MediaSource) -> str | None:
+    if source.mime_type:
+        return source.mime_type.split(";", 1)[0].strip().lower()
+    path = urlsplit(source.playback_url).path.lower()
+    if path.endswith(".m3u8"):
+        return "application/vnd.apple.mpegurl"
+    if path.endswith(".mp4"):
+        return "video/mp4"
+    return None
+
+
+def _is_hls_source(source: MediaSource) -> bool:
+    return _source_mime_type(source) in {
+        "application/vnd.apple.mpegurl",
+        "application/x-mpegurl",
+        "audio/mpegurl",
+        "audio/x-mpegurl",
+    }
+
+
+def _is_mp4_source(source: MediaSource) -> bool:
+    return _source_mime_type(source) == "video/mp4"

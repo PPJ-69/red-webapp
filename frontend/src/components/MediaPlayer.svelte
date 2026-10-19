@@ -166,6 +166,7 @@
           requestedItemId,
           requestedQuality,
           controller.signal,
+          video.canPlayType("application/vnd.apple.mpegurl") !== "",
         ));
       if (requestId !== activeRequest || controller.signal.aborted) return;
       apply({ type: "SOURCE_RESOLVED" });

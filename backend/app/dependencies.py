@@ -32,6 +32,7 @@ def get_media_resolver(request: Request) -> MediaResolver:
             get_upstream_provider(request),
             ttl_seconds=settings.source_cache_ttl_seconds,
             metrics_registry=getattr(request.app.state, "metrics", metrics),
+            enable_hls=settings.enable_hls,
         )
         request.app.state.media_resolver = resolver
     return resolver

@@ -20,6 +20,13 @@ and create `deploy/.env` from `deploy/.env.example`. Set
 `TLS_CERT_PATH` and `TLS_KEY_PATH` to readable host file paths. Do not display
 or copy private key contents into logs or tickets.
 
+`ENABLE_HLS` defaults to `false`. Enable it only after the provider source
+format is approved and the target browser has native HLS support. The relay
+supports VOD playlists, nested playlists, segments, and initialization maps;
+unsupported live/event, encrypted, and low-latency playlists are never
+forwarded. Playback falls back to MP4 when available and otherwise returns
+`unsupported_media`.
+
 From the repository root:
 
 ```powershell

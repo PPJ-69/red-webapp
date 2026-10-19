@@ -32,6 +32,10 @@ memory. No volume is used for media, thumbnails, or application state.
    Docker gives the backend 30 seconds to finish shutdown.
 
 `UPSTREAM_ALLOWED_HOSTS` is required and must contain only approved hosts.
+`ENABLE_HLS` defaults to `false`. Enable it only when the approved provider
+returns supported VOD HLS sources; the relay rewrites playlists and relays
+segments and initialization maps through short-lived in-memory handles.
+Live/event, encrypted, and low-latency HLS playlists are rejected.
 Review the provider's terms and rate limits before live use. If the Compose
 network subnet conflicts with the host network, change the subnet and both
 fixed service addresses together, including `TRUSTED_PROXY_IPS`.

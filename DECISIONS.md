@@ -118,7 +118,7 @@
 # M6-C03 Load-Tuning Decisions
 
 - **C03-D1 — Source-cache lifetime:** Set the configurable source descriptor/target cache TTL default to 60 seconds via `SOURCE_CACHE_TTL_SECONDS`. Fake-provider resolution remains well below the latency target at this value; the live provider's signed-URL lifetime is still unverified under O6.
-- **C03-D2 — Stream and session caps:** Retain `MAX_ACTIVE_STREAMS_PER_IP=3`; the 16-stream cancellation test demonstrates bounded local memory but does not establish provider concurrency or rate-limit capacity. Do not add a backend session cap while backend-session scope remains unresolved under O1/O10.
+- **C03-D2 — Stream cap:** Retain `MAX_ACTIVE_STREAMS_PER_IP=3`; the 16-stream cancellation test demonstrates bounded local memory but does not establish provider concurrency or rate-limit capacity. No backend session cap is needed in v1 (D16).
 
 # M6-C04 Deployment Contracts
 
@@ -131,3 +131,11 @@
 - **PDW-1 — Explicit opt-in:** `UPSTREAM_PROVIDER` defaults to `disabled`. The base Compose stack keeps it disabled; only the separate provider overlay selects `redgifs`.
 - **PDW-2 — Secret-file boundary:** The provider accepts a raw bearer token from a mounted read-only file (`REDGIFS_TOKEN_FILE`), not a token value in environment configuration. Startup reads and validates the file locally and makes no provider request. On authentication retry, the token factory rereads the file; the operator is responsible for supplying/rotating a provider-issued token.
 - **PDW-3 — Live gate remains external:** Provider construction and local startup are testable without network access, but they do not establish provider terms, token-acquisition semantics, or live API compatibility. O6 must be approved and a separate live integration smoke explicitly authorized before enabling the overlay.
+
+# Session Scope Resolution
+
+- **D16 — Frontend-only temporary session state in v1:** Favorites, seen IDs, search history, saved searches, and temporary settings remain in frontend RAM and are lost on page reload. Backend `/api/session*` endpoints and server-side session storage are optional future functionality, not part of v1. Privacy Mode stays locked ON. `REQUIREMENTS.md`, `ARCHITECTURE.md`, and `IMPLEMENTATION_PLAN.md` were aligned to this explicit scope; M5-C08 is deferred.
+
+# VOD HLS Relay
+
+- **D17 — Opt-in VOD HLS through opaque relay handles:** `ENABLE_HLS` defaults to false. When enabled and the browser reports native HLS support, the provider may select a VOD HLS source. The backend rewrites master/media playlists and serves referenced playlists, segments, and initialization maps through short-lived in-memory opaque tokens bound to the media ID. Every upstream resource is independently validated; privileged headers are not forwarded cross-origin. Live/event, encrypted, and low-latency HLS are never forwarded; playback falls back to MP4 when available and returns `unsupported_media` when it is not.

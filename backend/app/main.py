@@ -37,6 +37,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             app.state.upstream_provider = None
         yield
     finally:
+        stream_service = getattr(app.state, "stream_service", None)
+        if stream_service is not None:
+            stream_service.hls_resources.clear()
         transport = getattr(app.state, "stream_transport", None)
         try:
             if transport is not None:

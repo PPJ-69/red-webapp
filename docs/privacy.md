@@ -31,9 +31,9 @@ upstream provider never retains data.
   operates the deployment. Metrics are process-local and logged at graceful
   shutdown. Do not treat deployment logs as ephemeral unless the operator has
   verified their logging policy.
-- This project does not currently provide backend session endpoints. The
-  requirement/plan mismatch for temporary anonymous server sessions remains
-  unresolved under O1/O10; full requirements compliance is not established.
+- V1 favorites, viewed IDs, history, and temporary settings live in frontend
+  RAM and are lost on page reload. Backend session endpoints are optional
+  future functionality (D16).
 - The full no-download scenario uses intercepted responses and in-memory
   browser-generated media. It proves the tested local scenario, not all
   browsers, operating systems, or deployment environments.

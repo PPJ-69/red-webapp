@@ -35,6 +35,7 @@ class Settings:
     trusted_proxy_ips: tuple[str, ...] = ()
     cors_allowed_origins: tuple[str, ...] = ()
     source_cache_ttl_seconds: float = DEFAULT_SOURCE_CACHE_TTL_SECONDS
+    enable_hls: bool = False
 
     @classmethod
     def from_environment(
@@ -137,6 +138,13 @@ class Settings:
                     "without paths, credentials, queries, or wildcards."
                 ) from exc
 
+        raw_enable_hls = environ.get("ENABLE_HLS", "false").strip().lower()
+        if raw_enable_hls not in {"true", "false", "1", "0", "yes", "no"}:
+            raise ConfigurationError(
+                "ENABLE_HLS must be a boolean value."
+            )
+        enable_hls = raw_enable_hls in {"true", "1", "yes"}
+
         return cls(
             app_env=app_env,
             upstream_provider=upstream_provider,
@@ -146,6 +154,7 @@ class Settings:
             trusted_proxy_ips=tuple(trusted_proxy_ips),
             cors_allowed_origins=tuple(dict.fromkeys(cors_allowed_origins)),
             source_cache_ttl_seconds=source_cache_ttl_seconds,
+            enable_hls=enable_hls,
         )
 
 

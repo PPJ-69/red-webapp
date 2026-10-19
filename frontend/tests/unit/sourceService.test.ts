@@ -31,9 +31,33 @@ describe("SourceService", () => {
       kind: "relay",
     });
     expect(fetcher.mock.calls[0][0]).toBe(
-      "/api/media/id%2Fpart/source?quality=hd",
+      "/api/media/id%2Fpart/source?quality=hd&supportsHls=false",
     );
     expect(fetcher.mock.calls[0][1]?.signal).toBe(controller.signal);
+  });
+
+  it("reports native HLS support to the source resolver", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          playbackUrl: "/api/stream/media?quality=auto&hls=1",
+          mimeType: "application/vnd.apple.mpegurl",
+        }),
+        { status: 200 },
+      ),
+    );
+    const service = new SourceService(new ApiClient({ fetcher }));
+
+    await service.resolve(
+      "media",
+      "auto",
+      new AbortController().signal,
+      true,
+    );
+
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "/api/media/media/source?quality=auto&supportsHls=true",
+    );
   });
 
   it.each([
