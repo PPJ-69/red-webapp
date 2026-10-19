@@ -59,7 +59,7 @@ jobs:
           PYTHONPATH: .
         run: python -B tools/compliance/fs_monitor/run_scenario.py --root . -- python -B -c "from fastapi.testclient import TestClient; from backend.app.main import app; assert TestClient(app).get('/health/ready').status_code == 200"
 
-      - name: Verify browser storage monitor
+      - name: Verify browser storage monitor and E2E
         run: |
           python -m playwright install --with-deps chromium
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.poc_spec -v
@@ -75,7 +75,12 @@ jobs:
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.accessibility_audit_spec -v
           PYTHONPATH=. python -B -m unittest frontend.tests.e2e.no_persistent_storage_spec -v
           python -B tools/compliance/browser_storage_check/check_browser_storage.py --self-check
-          python -B -m unittest discover -s tests/compliance -t . -v
+
+      - name: Run release-blocking full no-download scenario
+        run: PYTHONPATH=. python -B -m unittest tests.compliance.test_full_scenario -v
+
+      - name: Verify compliance harness
+        run: PYTHONPATH=. python -B -m unittest tests.compliance.test_harness_selfcheck -v
 
       - name: Run dependency vulnerability scans
         run: |

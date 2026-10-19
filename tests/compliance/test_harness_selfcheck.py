@@ -99,11 +99,11 @@ class ComplianceHarnessSelfCheckTests(unittest.TestCase):
                 environment["APP_ENV"] = "test"
                 environment["PYTHONDONTWRITEBYTECODE"] = "1"
                 script = (
-                    "from fastapi.testclient import TestClient; "
-                    "from backend.app.main import app; "
-                    "client = TestClient(app); "
-                    "response = client.get('/health/ready'); "
-                    "assert response.status_code == 200"
+                    "from fastapi.testclient import TestClient\n"
+                    "from backend.app.main import app\n"
+                    "with TestClient(app) as client:\n"
+                    "    response = client.get('/health/ready')\n"
+                    "    assert response.status_code == 200"
                 )
                 result = subprocess.run(
                     [sys.executable, "-c", script],

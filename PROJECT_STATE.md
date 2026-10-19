@@ -5,17 +5,17 @@
 
 ## Architecture Version
 - **v1.2 — quality-preserving relay path.** The relay playback URL carries only the validated quality enum so Range requests reuse the `/source` selection without accepting arbitrary URL targets (2026-10-08).
-- Implementation progress: **33 of 36 chunks** (35 unconditional + 1 conditional).
+- Implementation progress: **34 of 36 chunks** (35 unconditional + 1 conditional).
 - Any architecture change must be logged under *Important Architecture Decisions* and bump this version. No silent changes.
 
 ## Current Milestone
 **M6: Hardening & Release**
 
 ## Current Chunk
-**M6-C05: Full no-download compliance run and security review gate**
+**M6-C06: Documentation and operational runbook**
 - Status: pending.
-- Depends on: M6-C01, M6-C02, M6-C03, M6-C04, M5-C07.
-- Handoff: run the release-blocking full no-download scenario and complete the security checklist.
+- Depends on: M6-C05, M6-C03.
+- Handoff: complete the operational runbook and reconcile privacy wording, known limitations, and release gates across project documentation.
 
 ## Completed Chunks
 - **M1-C01:** Backend core, error envelope, canonical models, health. Gate O5 resolved using D10. 14 unit/integration tests pass.
@@ -51,6 +51,7 @@
 - **M6-C02:** Added structured stdout metrics snapshots on graceful shutdown, updated the direct-vs-relay gauge as the direct share of uncached source resolutions, and verified canary-free logs for upstream 401/403/429, timeout, disconnect, and malformed-item failures. Metrics remain unlabeled; `browser_player_errors` remains excluded under G4.
 - **M6-C03:** Added repeatable fake-provider/CDN latency checks, expanded the relay memory/cancellation scenario to sixteen concurrent cancelled streams, made the source-cache TTL configurable with a 60-second default, and verified production JS size plus viewport-driven thumbnail requests in Chromium. Local p95/memory/bundle targets pass; live-provider capacity and signed-URL lifetime remain unverified under O6.
 - **M6-C04:** Added a two-image production build (frontend assets in unprivileged Nginx; non-root Python API), read-only Compose services with externally mounted TLS files, Range-aware unbuffered proxying and trusted proxy identity. Added loopback proxy integration coverage for repeated Range/seek plus transport closure on application shutdown; actual Docker/Nginx execution remains unavailable in this environment.
+- **M6-C05:** Added a release-blocking browser/filesystem scenario and `docs/security-review.md`; the scenario exercises 10 unique searches, 100 distinct real playback sessions with 200 seeks and 100 Range requests, 320 scrolled thumbnails, favorites/save-search, browser restart, browser-storage/cookie checks, and recursive artifact scans while monitoring project/temp/app-data roots. CI runs the scenario. Local run found zero storage use, cookies, filesystem writes, or new artifacts; security checklist records O6 and O7/O8 deployment limits.
 
 ## Upcoming Chunks
 **M1:** Complete. The configured CI stages pass locally; a GitHub-hosted workflow run remains pending.
@@ -59,9 +60,9 @@
 - **M3 Relay (POC gate):** C01 SSRF guardrails · C02 Range semantics · C03 fake CDN · C04 stream relay · C05 concurrency limits · C06 POC page + gate
 - **M4 Player:** Complete — C01 state machine · C02 MediaPlayer + E2E rig · C03 failure recovery · C04 controls/keyboard · C05 overlay/queue/prefetch
 - **M5 Discovery & Session:** C01 query parser/search store · C02 SearchBar · C03 grid/infinite scroll · C04 RAM stores (done) · C05 favorites/seen/history (done) · C06 app integration (done) · C07 a11y/E2E (done) · C08 backend sessions *(conditional; pending O1/O10)*
-- **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit (done) · C03 load tuning (done) · C04 deploy/proxy (done) · C05 full no-download compliance run · C06 docs/runbook
+- **M6 Hardening & Release:** C01 headers/CORS/CSP (done) · C02 log-leak audit (done) · C03 load tuning (done) · C04 deploy/proxy (done) · C05 full no-download compliance/security review (done) · C06 docs/runbook
 
-Hard gates: the M3-C06 live-provider smoke remains gated on O6; M4-C02 used only the fake provider/CDN. **M6-C05** blocks release.
+Hard gates: M6-C05's no-download scenario passes locally and runs as a release-blocking CI stage. Live-provider use remains gated on O6; hosted/public release remains blocked by O7/O8.
 
 ## Important Architecture Decisions
 - **Stream, don't store.** No DB, media or thumbnail cache, or persisted app state. RAM-only, TTL-bound.
@@ -112,9 +113,9 @@ No implementation defects remain from the completed-chunk audit. Outstanding doc
 - **M6-C02:** Full backend CI suite passes (160 tests). Added canary leak scenarios for upstream 401/403/429, stream timeout and disconnect, and malformed provider data; verifies credentials, signed URL query values, cookies, and session contents appear neither in logs nor metric labels. Verified the shutdown JSON metrics snapshot and direct/relay ratio calculations.
 - **M6-C03:** Full backend suite passes (164 tests), including 100-sample fake-provider search/source-resolution benchmarks, 30 loopback relay first-byte samples, and the 128 MiB relay with 16 concurrent cancelled streams (4.0 MiB RSS growth, <48 MiB). Chromium confirms 39/100 lazy thumbnails requested before scrolling and loads card 90 when scrolled into view. Vite production entry JavaScript is 38.39 kB gzip (<250 kB). Source-cache TTL is configurable, default 60 seconds; per-IP cap remains 3 pending live-provider capacity evidence. Backend sessions remain N/A under O1/O10.
 - **M6-C04:** Added deployment packaging, HTTPS reverse-proxy configuration, read-only/non-root runtime settings, and `deploy/README.md`. Full backend suite passes (166 tests), including proxy Range/seek integration and shutdown transport-close assertion. Docker and Nginx executables are unavailable locally, so image build and real Nginx/TLS smoke remain unverified.
+- **M6-C05:** `tests.compliance.test_full_scenario` passes in Chromium: 10 unique searches, 100 distinct media played, 200 seeks, 100 ranged stream requests, 320 unique thumbnails fetched while scrolling, 0 browser storage/cookies, 0 filesystem-monitor violations, and no newly detected media/database/settings/cache artifacts. Security checklist completed with O6/O7/O8 limits explicit; CI now runs the scenario as a release-blocking check.
 - Outstanding gates:
   - M3-C06 approved live-provider smoke after O6 is resolved; fake-provider implementation and E2E are complete.
-  - M6-C05 full no-download scenario (**release-blocking**).
 - Planned suites: backend unit/integration/contract (recorded fixtures, live opt-in), fake provider + fake CDN, frontend unit/component, browser E2E (lifecycle, recovery, controls, navigation, search), schema-drift check, storage-API lint.
 
 ## Open Decisions
@@ -137,7 +138,7 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 
 ## Last Handoff
 - **Date:** 2026-10-19
-- **Done:** Completed M6-C04 deployment packaging and reverse-proxy behavior; targeted proxy/Range integration passes. Docker/Nginx runtime validation is unavailable locally.
-- **Next:** M6-C05 full no-download compliance and security review gate. Resolve the REQUIREMENTS/PLAN session-scope conflict before claiming full product-requirement compliance; M5-C08 remains conditional on O1/O10.
+- **Done:** Completed M6-C05 full no-download compliance and security review gate; the browser/filesystem scenario passes with zero persistence artifacts.
+- **Next:** M6-C06 documentation and operational runbook. Resolve the REQUIREMENTS/PLAN session-scope conflict before claiming full product-requirement compliance; M5-C08 remains conditional on O1/O10.
 - **Watch:** Live-provider use remains gated by O6. Preserve RAM-only metadata and no-browser-storage behavior unless O1/O10 is explicitly resolved.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
