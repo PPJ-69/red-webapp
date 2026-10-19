@@ -13,9 +13,11 @@ class MockAsyncClient:
     def __init__(self, responses: list[httpx.Response]) -> None:
         self.responses = responses
         self.calls = 0
+        self.request_kwargs = []
 
     async def request(self, *args, **kwargs):
         self.calls += 1
+        self.request_kwargs.append(kwargs)
         if self.calls > len(self.responses):
             raise AssertionError("No mock response left.")
         return self.responses[self.calls - 1]
@@ -72,8 +74,10 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
                 httpx.Response(200, text="ok"),
             ]
         )
+        request_kwargs = []
 
         async def request(*args, **kwargs):
+            request_kwargs.append(kwargs)
             return next(responses)
 
         transport._client = type("Client", (), {"request": request})()
@@ -81,6 +85,13 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(manager.token, "fresh-token")
+        self.assertEqual(
+            [
+                call["headers"]["Authorization"]
+                for call in request_kwargs
+            ],
+            ["Bearer fresh-token", "Bearer fresh-token"],
+        )
 
 
 if __name__ == "__main__":

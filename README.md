@@ -11,9 +11,10 @@ This repository is at M6-C06, documentation and operational runbook. The
 browser no-download gate passes locally and runs as a release-blocking CI
 check. This does not make the current production package ready for live use:
 
-- The production FastAPI entry point does not yet install a provider instance.
-  Provider-backed API requests therefore fail until deployment wiring is
-  implemented and verified.
+- Provider construction is opt-in and disabled in the default Compose stack.
+  The explicit provider Compose overlay reads a mounted token file and wires
+  the existing adapter, but no live provider request or deployment smoke has
+  been verified.
 - Upstream terms, rate limits, and permitted use (O6) have not been cleared.
 - Hosted access control and audience gating (O7/O8) are not implemented.
 - Backend session endpoints in `REQUIREMENTS.md` conflict with the approved

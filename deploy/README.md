@@ -1,12 +1,11 @@
 # Private deployment
 
-> **Not ready for live use:** The current production FastAPI entry point does
-> not install a provider instance, and this Compose file has no provider
-> credential/configuration wiring. Provider-backed API routes will not work
-> until that wiring is implemented and verified. O6 (provider terms/rate
-> limits), O7 (hosted access control), and O8 (audience gating) also remain
-> release gates. This stack is private-network packaging, not approval for
-> public or live-provider deployment.
+> **Not approved for live use:** The base Compose stack keeps the provider
+> disabled. An explicit overlay can wire the existing adapter to a mounted
+> token file, but this has not been live-verified. O6 (provider terms/rate
+> limits), O7 (hosted access control), and O8 (audience gating) remain release
+> gates. This is private-network packaging, not approval for public or
+> live-provider deployment.
 
 The Compose stack builds the production frontend into an unprivileged Nginx
 image and runs the API in a separate, non-root Python image. The API port is
@@ -40,6 +39,16 @@ fixed service addresses together, including `TRUSTED_PROXY_IPS`.
 For full operational checks, failure response, rollback, and remaining
 deployment-validation requirements, see the [runbook](../docs/runbook.md) and
 [upstream compliance checklist](../docs/upstream-compliance-checklist.md).
+
+The default stack explicitly sets `UPSTREAM_PROVIDER=disabled`. Only after O6
+approval and the required live smoke, the opt-in overlay can be combined with
+the base file using
+`docker compose --env-file .env -f docker-compose.yml -f docker-compose.provider.yml up --build -d`.
+Set `REDGIFS_TOKEN_HOST_PATH` to a host path containing only the raw provider
+token. Compose mounts it as a read-only secret; do not put the token content
+in `.env`, environment variables, or the repository. The overlay does not
+implement credential acquisition or refresh; on a rejected token, replace the
+secret file and restart the service.
 
 The container build installs only the pinned backend runtime dependency set;
 test, browser-automation, and development packages are excluded.

@@ -1,0 +1,11 @@
+services:
+  backend:
+    environment:
+      UPSTREAM_PROVIDER: redgifs
+      REDGIFS_TOKEN_FILE: /run/secrets/redgifs_token
+    secrets:
+      - redgifs_token
+
+secrets:
+  redgifs_token:
+    file: ${REDGIFS_TOKEN_HOST_PATH:?Set REDGIFS_TOKEN_HOST_PATH to the mounted raw-token file}

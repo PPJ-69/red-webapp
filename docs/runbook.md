@@ -4,12 +4,13 @@
 
 Use the Compose deployment only on a private, trusted network. O6 (provider
 terms/rate limits), O7 (hosted access control), and O8 (audience gating) remain
-release gates. In addition, the production FastAPI entry point currently has
-no provider instance wired into application state, so provider-backed routes
-are not ready for live operation. A healthy container only proves process
-health, not provider readiness. Do not deploy publicly or add live credentials
-until the [upstream checklist](upstream-compliance-checklist.md) is approved
-and provider wiring is implemented and verified.
+release gates. Provider wiring is opt-in and disabled in the base Compose
+stack; the explicit provider overlay reads a mounted token file and constructs
+the existing adapter, but has not been validated against the live provider. A
+healthy container only proves process health, not provider readiness. Do not
+deploy publicly or enable live credentials until the
+[upstream checklist](upstream-compliance-checklist.md) is approved and the
+live integration is verified.
 
 ## Start and verify
 
@@ -66,10 +67,11 @@ the application.
 An `upstream_authentication_failed` or repeated provider error means the
 provider request path is failing; it is not fixed by retrying indefinitely.
 Check only the deployment's approved secret/configuration mechanism and
-sanitized error category. The current production Compose file does not define
-provider credential settings or attach a provider instance, so do not attempt
-to invent environment variable names or add secrets to `.env`. Disable live
-use and escalate until provider wiring is implemented and reviewed.
+sanitized error category. The provider overlay reads a raw bearer token from a
+mounted secret file; do not put token contents in `.env`. A `401` refresh
+rereads that file once. Replace the mounted secret and restart the service if
+the provider rejects the credential; disable live use and escalate if failures
+continue.
 
 ### Rate limiting
 
@@ -140,4 +142,5 @@ release, build and run the actual containers with an approved provider
 configuration; verify TLS, health, repeated Range/seek behavior, unbuffered
 streaming, graceful stream closure, and absence of application-created
 artifacts. Docker/Nginx/TLS execution remains unverified locally, and live
-provider verification is blocked until O6 and provider wiring are resolved.
+provider verification is blocked until O6 is resolved and the opt-in wiring
+has been validated.

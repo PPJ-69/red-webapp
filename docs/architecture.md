@@ -26,14 +26,14 @@ backend session API or browser persistence layer is currently implemented.
 ## API and provider state
 
 The API routes currently implemented are listed in [the API reference](api.md)
-and machine-readable [OpenAPI document](openapi.json). The production app
-factory includes those routes and the RedGIFs adapter code exists behind the
-provider interface. However, `backend/app/main.py` does not attach a concrete
-provider to application state, and the production Compose configuration does
-not supply one. Provider-backed API calls fail with an internal error until
-provider construction, credential configuration, and startup wiring are
-implemented and tested. Do not mistake a healthy process or successful image
-build for a usable live-provider deployment.
+and machine-readable [OpenAPI document](openapi.json). Provider construction is
+disabled by default. Setting `UPSTREAM_PROVIDER=redgifs` and mounting a raw
+token file through `REDGIFS_TOKEN_FILE` wires the existing RedGIFs adapter into
+application state at startup; startup reads the token locally and makes no
+provider request. The explicit deployment overlay is
+`deploy/docker-compose.provider.yml`. This wiring has not been validated
+against the live provider and does not resolve O6. Do not mistake a healthy
+process or successful image build for a usable live-provider deployment.
 
 The requirements document includes `/api/session*` endpoints and temporary
 anonymous session behavior. The approved implementation plan makes the

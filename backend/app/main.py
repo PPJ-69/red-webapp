@@ -20,13 +20,21 @@ from .observability.logging import (
 )
 from .observability.metrics import metrics
 from .security.headers import install_security_headers
+from .upstream.factory import create_upstream_provider
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    app.state.settings = get_settings()
+    settings = get_settings()
+    app.state.settings = settings
     app.state.metrics = metrics
+    provider = None
     try:
+        provider = await create_upstream_provider(settings)
+        if provider is not None:
+            app.state.upstream_provider = provider
+        elif not hasattr(app.state, "upstream_provider"):
+            app.state.upstream_provider = None
         yield
     finally:
         transport = getattr(app.state, "stream_transport", None)
@@ -34,10 +42,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             if transport is not None:
                 await transport.aclose()
         finally:
-            log_event(
-                "metrics_snapshot",
-                metrics=getattr(app.state, "metrics", metrics).snapshot(),
-            )
+            try:
+                if provider is not None:
+                    await provider.aclose()
+                    app.state.upstream_provider = None
+            finally:
+                log_event(
+                    "metrics_snapshot",
+                    metrics=getattr(app.state, "metrics", metrics).snapshot(),
+                )
 
 
 configure_logging()

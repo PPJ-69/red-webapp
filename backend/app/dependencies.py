@@ -1,6 +1,8 @@
 from fastapi import Request
 
 from .config import Settings
+from .domain.enums import ErrorCategory
+from .domain.errors import ApplicationError
 from .observability.metrics import metrics
 from .security.limits import StreamLimiter
 from .services.media_resolver import MediaResolver
@@ -15,7 +17,10 @@ def get_settings() -> Settings:
 def get_upstream_provider(request: Request) -> UpstreamMediaProvider:
     provider = getattr(request.app.state, "upstream_provider", None)
     if provider is None:
-        raise RuntimeError("No upstream media provider has been configured.")
+        raise ApplicationError(
+            ErrorCategory.PROVIDER_UNAVAILABLE,
+            "The upstream provider is disabled.",
+        )
     return provider
 
 

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 import math
 from ipaddress import ip_network
+from pathlib import Path
 from typing import Mapping
 from urllib.parse import urlsplit
 
@@ -15,6 +16,11 @@ class AppEnvironment(str, Enum):
     PRODUCTION = "production"
 
 
+class UpstreamProviderMode(str, Enum):
+    DISABLED = "disabled"
+    REDGIFS = "redgifs"
+
+
 class ConfigurationError(ValueError):
     """Raised when required environment configuration is missing or invalid."""
 
@@ -22,6 +28,8 @@ class ConfigurationError(ValueError):
 @dataclass(frozen=True)
 class Settings:
     app_env: AppEnvironment
+    upstream_provider: UpstreamProviderMode = UpstreamProviderMode.DISABLED
+    redgifs_token_file: Path | None = None
     upstream_allowed_hosts: tuple[str, ...] = ()
     max_active_streams_per_ip: int = 3
     trusted_proxy_ips: tuple[str, ...] = ()
@@ -48,6 +56,27 @@ class Settings:
             raise ConfigurationError(
                 f"APP_ENV must be one of: {allowed}."
             ) from exc
+
+        raw_provider = environ.get("UPSTREAM_PROVIDER", "disabled").strip().lower()
+        try:
+            upstream_provider = UpstreamProviderMode(raw_provider)
+        except ValueError as exc:
+            allowed = ", ".join(provider.value for provider in UpstreamProviderMode)
+            raise ConfigurationError(
+                f"UPSTREAM_PROVIDER must be one of: {allowed}."
+            ) from exc
+
+        raw_token_file = environ.get("REDGIFS_TOKEN_FILE", "").strip()
+        if upstream_provider is UpstreamProviderMode.REDGIFS and not raw_token_file:
+            raise ConfigurationError(
+                "REDGIFS_TOKEN_FILE must point to a mounted provider token file "
+                "when UPSTREAM_PROVIDER=redgifs."
+            )
+        if upstream_provider is UpstreamProviderMode.DISABLED and raw_token_file:
+            raise ConfigurationError(
+                "REDGIFS_TOKEN_FILE requires UPSTREAM_PROVIDER=redgifs."
+            )
+        redgifs_token_file = Path(raw_token_file) if raw_token_file else None
 
         raw_hosts = environ.get("UPSTREAM_ALLOWED_HOSTS", "")
         upstream_allowed_hosts = tuple(
@@ -110,6 +139,8 @@ class Settings:
 
         return cls(
             app_env=app_env,
+            upstream_provider=upstream_provider,
+            redgifs_token_file=redgifs_token_file,
             upstream_allowed_hosts=upstream_allowed_hosts,
             max_active_streams_per_ip=max_active_streams_per_ip,
             trusted_proxy_ips=tuple(trusted_proxy_ips),

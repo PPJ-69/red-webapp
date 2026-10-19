@@ -27,8 +27,9 @@ defaults and validation limits are defined in OpenAPI.
 The stream endpoint does not accept arbitrary URL parameters. A successful
 stream may return `200` or `206`; unsatisfiable ranges use `416`. Error
 responses use the API's normalized envelope where applicable. Provider-backed
-routes require a provider instance, which is not currently wired into the
-production app; see [architecture status](architecture.md#api-and-provider-state).
+routes return `503 provider_unavailable` when no provider is configured. The
+default deployment keeps the provider disabled; see
+[architecture status](architecture.md#api-and-provider-state).
 
 The source descriptor schema is intentionally public and excludes the
 provider's internal target and required upstream headers. Canonical response

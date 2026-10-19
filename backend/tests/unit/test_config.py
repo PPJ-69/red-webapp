@@ -1,6 +1,11 @@
 import unittest
 
-from backend.app.config import AppEnvironment, ConfigurationError, Settings
+from backend.app.config import (
+    AppEnvironment,
+    ConfigurationError,
+    Settings,
+    UpstreamProviderMode,
+)
 
 
 class SettingsTests(unittest.TestCase):
@@ -8,11 +13,38 @@ class SettingsTests(unittest.TestCase):
         settings = Settings.from_environment({"APP_ENV": "test"})
 
         self.assertEqual(settings.app_env, AppEnvironment.TEST)
+        self.assertEqual(settings.upstream_provider, UpstreamProviderMode.DISABLED)
+        self.assertIsNone(settings.redgifs_token_file)
         self.assertEqual(settings.upstream_allowed_hosts, ())
         self.assertEqual(settings.max_active_streams_per_ip, 3)
         self.assertEqual(settings.source_cache_ttl_seconds, 60.0)
         self.assertEqual(settings.trusted_proxy_ips, ())
         self.assertEqual(settings.cors_allowed_origins, ())
+
+    def test_provider_configuration_is_opt_in_and_requires_secret_file(self) -> None:
+        settings = Settings.from_environment(
+            {
+                "APP_ENV": "production",
+                "UPSTREAM_PROVIDER": "redgifs",
+                "REDGIFS_TOKEN_FILE": "/run/secrets/redgifs_token",
+            }
+        )
+        self.assertEqual(settings.upstream_provider, UpstreamProviderMode.REDGIFS)
+        self.assertEqual(
+            settings.redgifs_token_file.as_posix(),
+            "/run/secrets/redgifs_token",
+        )
+
+        for environ in (
+            {"APP_ENV": "production", "UPSTREAM_PROVIDER": "unknown"},
+            {"APP_ENV": "production", "UPSTREAM_PROVIDER": "redgifs"},
+            {
+                "APP_ENV": "production",
+                "REDGIFS_TOKEN_FILE": "/run/secrets/redgifs_token",
+            },
+        ):
+            with self.subTest(environ=environ), self.assertRaises(ConfigurationError):
+                Settings.from_environment(environ)
 
     def test_loads_allowlisted_upstream_hosts(self) -> None:
         settings = Settings.from_environment({

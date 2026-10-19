@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Mapping
 from typing import Any
 
@@ -29,17 +28,17 @@ class RedgifsClient:
             async def token_factory() -> str:
                 if self._fixtures:
                     return "fixture-token"
-                value = os.getenv("REDGIFS_TOKEN") or os.getenv("REDGIFS_API_TOKEN")
-                if value:
-                    return value
                 raise ApplicationError(
                     ErrorCategory.UPSTREAM_AUTHENTICATION_FAILED,
-                    "RedGIFs token is not configured.",
+                    "RedGIFs authentication is not configured.",
                 )
 
             auth_manager = AuthManager(token_factory, ttl_seconds=300.0)
         self.auth_manager = auth_manager
         self.transport = transport or UpstreamTransport(auth_manager=self.auth_manager)
+
+    async def aclose(self) -> None:
+        await self.transport.aclose()
 
     async def authenticate(self) -> None:
         await self.auth_manager.get_token()

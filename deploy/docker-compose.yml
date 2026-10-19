@@ -6,6 +6,7 @@ services:
       target: backend
     environment:
       APP_ENV: production
+      UPSTREAM_PROVIDER: disabled
       UPSTREAM_ALLOWED_HOSTS: ${UPSTREAM_ALLOWED_HOSTS:?Set UPSTREAM_ALLOWED_HOSTS to the permitted CDN hosts}
       TRUSTED_PROXY_IPS: 172.30.0.2/32
       MAX_ACTIVE_STREAMS_PER_IP: ${MAX_ACTIVE_STREAMS_PER_IP:-3}

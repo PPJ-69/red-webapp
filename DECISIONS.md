@@ -125,3 +125,9 @@
 - **C04-D1 — Runtime packaging:** Build the frontend into an unprivileged Nginx image and run the API in a separate non-root Python image. Both containers use read-only root filesystems and ephemeral `/tmp`; no media or application-state volume is mounted.
 - **C04-D2 — Proxy trust and stream behavior:** Nginx replaces client-supplied forwarded-IP headers with the socket peer and the API trusts only Nginx's fixed Compose-network address. It forwards `Range`/`If-Range`, disables response and temporary-file buffering for API streams, and uses a 610-second proxy read timeout.
 - **C04-D3 — TLS and shutdown:** TLS certificates and private keys are external read-only mounts, never build inputs. Uvicorn receives 20 seconds for graceful request cancellation and stream cleanup; Compose allows 30 seconds before terminating the API container.
+
+# Provider Deployment Wiring
+
+- **PDW-1 — Explicit opt-in:** `UPSTREAM_PROVIDER` defaults to `disabled`. The base Compose stack keeps it disabled; only the separate provider overlay selects `redgifs`.
+- **PDW-2 — Secret-file boundary:** The provider accepts a raw bearer token from a mounted read-only file (`REDGIFS_TOKEN_FILE`), not a token value in environment configuration. Startup reads and validates the file locally and makes no provider request. On authentication retry, the token factory rereads the file; the operator is responsible for supplying/rotating a provider-issued token.
+- **PDW-3 — Live gate remains external:** Provider construction and local startup are testable without network access, but they do not establish provider terms, token-acquisition semantics, or live API compatibility. O6 must be approved and a separate live integration smoke explicitly authorized before enabling the overlay.

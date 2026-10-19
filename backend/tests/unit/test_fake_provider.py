@@ -18,6 +18,7 @@ from backend.app.domain.models import (
     SearchResult,
     canonical_model_schemas,
 )
+from backend.app.domain.errors import register_exception_handlers
 from backend.app.upstream.provider import UpstreamMediaProvider
 from backend.tests.contract.provider_contract import ProviderContract
 from backend.tests.conftest import fake_cdn_server
@@ -102,8 +103,10 @@ class FakeProviderTests(unittest.IsolatedAsyncioTestCase):
         ) -> dict[str, str]:
             return {"status": "unexpected"}
 
-        with self.assertRaisesRegex(RuntimeError, "No upstream media provider"):
-            TestClient(app, raise_server_exceptions=True).get("/provider")
+        register_exception_handlers(app)
+        response = TestClient(app).get("/provider")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["category"], "provider_unavailable")
 
     def test_internal_source_target_is_not_serializable_in_api_models(self) -> None:
         target = InternalSourceTarget(

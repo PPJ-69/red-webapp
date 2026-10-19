@@ -33,10 +33,10 @@ credentials or signed media URLs in this document.
   backend sessions against the approved frontend-only RAM state default.
   Current backend session routes are absent; full requirements compliance
   cannot be claimed.
-- **Provider wiring:** Install and configure a concrete provider in the
-  production FastAPI app, with credentials held server-side, before provider
-  routes can be considered operational. The current production app does not
-  install one.
+- **Provider wiring:** The opt-in RedGIFs provider construction and mounted
+  token-file path are implemented. Validate them with an approved live
+  integration after O6 clearance; the default Compose stack keeps the
+  provider disabled.
 - **Deployment smoke:** Run the actual Docker/Nginx/TLS stack and verify
   repeated Range/seek, stream closure on shutdown, and no application-created
   media or state artifacts. Local Docker/Nginx/TLS execution is still
