@@ -1,0 +1,73 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: backend
+    environment:
+      APP_ENV: production
+      UPSTREAM_ALLOWED_HOSTS: ${UPSTREAM_ALLOWED_HOSTS:?Set UPSTREAM_ALLOWED_HOSTS to the permitted CDN hosts}
+      TRUSTED_PROXY_IPS: 172.30.0.2/32
+      MAX_ACTIVE_STREAMS_PER_IP: ${MAX_ACTIVE_STREAMS_PER_IP:-3}
+      SOURCE_CACHE_TTL_SECONDS: ${SOURCE_CACHE_TTL_SECONDS:-60}
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    tmpfs:
+      - /tmp
+    networks:
+      app:
+        ipv4_address: 172.30.0.3
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: proxy
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - type: bind
+        source: ${TLS_CERT_PATH:?Set TLS_CERT_PATH to a readable TLS certificate file}
+        target: /etc/nginx/certs/tls.crt
+        read_only: true
+      - type: bind
+        source: ${TLS_KEY_PATH:?Set TLS_KEY_PATH to a readable TLS private-key file}
+        target: /etc/nginx/certs/tls.key
+        read_only: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 10s
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+    networks:
+      app:
+        ipv4_address: 172.30.0.2
+    restart: unless-stopped
+
+networks:
+  app:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

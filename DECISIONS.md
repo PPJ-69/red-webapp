@@ -119,3 +119,9 @@
 
 - **C03-D1 — Source-cache lifetime:** Set the configurable source descriptor/target cache TTL default to 60 seconds via `SOURCE_CACHE_TTL_SECONDS`. Fake-provider resolution remains well below the latency target at this value; the live provider's signed-URL lifetime is still unverified under O6.
 - **C03-D2 — Stream and session caps:** Retain `MAX_ACTIVE_STREAMS_PER_IP=3`; the 16-stream cancellation test demonstrates bounded local memory but does not establish provider concurrency or rate-limit capacity. Do not add a backend session cap while backend-session scope remains unresolved under O1/O10.
+
+# M6-C04 Deployment Contracts
+
+- **C04-D1 — Runtime packaging:** Build the frontend into an unprivileged Nginx image and run the API in a separate non-root Python image. Both containers use read-only root filesystems and ephemeral `/tmp`; no media or application-state volume is mounted.
+- **C04-D2 — Proxy trust and stream behavior:** Nginx replaces client-supplied forwarded-IP headers with the socket peer and the API trusts only Nginx's fixed Compose-network address. It forwards `Range`/`If-Range`, disables response and temporary-file buffering for API streams, and uses a 610-second proxy read timeout.
+- **C04-D3 — TLS and shutdown:** TLS certificates and private keys are external read-only mounts, never build inputs. Uvicorn receives 20 seconds for graceful request cancellation and stream cleanup; Compose allows 30 seconds before terminating the API container.
