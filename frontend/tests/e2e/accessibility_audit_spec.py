@@ -140,12 +140,19 @@ class AccessibilityAuditBrowserTests(PlayerBasicBrowserTests):
                           : ((channel + 0.055) / 1.055) ** 2.4)
                         .reduce((sum, channel, index) =>
                           sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
-                      const contrastFailures = [
-                        ...document.querySelectorAll(
-                          "h1, h2, h3, p, label, button, a, [role='status']"
-                        ),
-                      ].filter(element => visible(element) &&
-                        element.innerText?.trim())
+                      const walker = document.createTreeWalker(
+                        document.body,
+                        NodeFilter.SHOW_TEXT,
+                      );
+                      const textElements = new Set();
+                      while (walker.nextNode()) {
+                        const text = walker.currentNode;
+                        if (text.textContent?.trim() &&
+                            text.parentElement && visible(text.parentElement)) {
+                          textElements.add(text.parentElement);
+                        }
+                      }
+                      const contrastFailures = [...textElements]
                         .flatMap(element => {
                           const style = getComputedStyle(element);
                           const foreground = channels(style.color);
@@ -163,7 +170,7 @@ class AccessibilityAuditBrowserTests(PlayerBasicBrowserTests):
                             (parseInt(style.fontWeight, 10) >= 700 &&
                               fontSize >= 18.66);
                           return ratio < (large ? 3 : 4.5)
-                            ? [`${element.tagName}: ${element.innerText.trim()} (${ratio.toFixed(2)}:1)`]
+                            ? [`${element.tagName}.${element.className}: ${element.textContent.trim()} (${ratio.toFixed(2)}:1)`]
                             : [];
                         });
                       return {
@@ -246,7 +253,8 @@ class AccessibilityAuditBrowserTests(PlayerBasicBrowserTests):
                 expect(
                     page.get_by_role("group", name="Playback controls")
                 ).to_be_visible()
-                page.get_by_test_id("keyboard-help").click()
+                page.evaluate("document.activeElement?.blur()")
+                page.keyboard.press("?")
                 dialog = page.get_by_role("dialog", name="Keyboard shortcuts")
                 expect(dialog).to_be_visible()
                 self.assertEqual(dialog.get_attribute("aria-modal"), "true")

@@ -41,6 +41,9 @@
   let searchAnnouncement = "";
   let searchError: unknown = null;
   let displayedResults: MediaItem[] = [];
+  let resultsHaveMore = false;
+  let loadingInitialResults = false;
+  let loadingMoreResults = false;
   let currentItem: MediaItem | undefined;
   let currentItemId: string | null = null;
   let creatorUsername = "";
@@ -221,6 +224,9 @@
     const unsubscribeQueue = resultsQueue.subscribe(updateQueue);
     const unsubscribeSearch = searchContextStore.subscribe((snapshot) => {
       displayedResults = [...snapshot.itemsById.values()];
+      resultsHaveMore = snapshot.hasMore;
+      loadingInitialResults = snapshot.loadingInitial;
+      loadingMoreResults = snapshot.loadingMore;
       refreshQueue(displayedResults);
     });
     window.addEventListener("keydown", handleWindowKeydown);
@@ -252,16 +258,16 @@
       <p data-testid="search-status" role="status" aria-live="polite">
         {searchAnnouncement}
       </p>
-      {#if displayedResults.length > 0 || searchContextStore.getSnapshot().loadingInitial || searchContextStore.getSnapshot().loadingMore}
+      {#if displayedResults.length > 0 || loadingInitialResults || loadingMoreResults}
         <ResultGrid
           items={displayedResults}
           {currentItemId}
-          loading={searchContextStore.getSnapshot().loadingMore}
-          hasMore={searchContextStore.getSnapshot().hasMore}
+          loading={loadingMoreResults}
+          hasMore={resultsHaveMore}
           on:open-item={openItem}
           on:load={loadNextPage}
         />
-      {:else if !searchContextStore.getSnapshot().loadingInitial}
+      {:else if !loadingInitialResults}
         <p data-testid="discovery-empty">Search for media to start browsing.</p>
       {/if}
       {#if currentItem && !playerOpen}

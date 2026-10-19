@@ -30,6 +30,7 @@ from backend.tests.fixtures.fake_cdn import FakeCDN, FakeCDNFault
 
 class _PocProvider(FakeMediaProvider):
     _media_ids = ("sample-media", "sample-media-two")
+    _failure_media_id = "sample-media-failure"
 
     async def search(self, query: SearchQuery) -> SearchResult:
         start = (query.page - 1) * query.limit
@@ -43,13 +44,14 @@ class _PocProvider(FakeMediaProvider):
         )
 
     async def get_media(self, media_id: str) -> MediaItem:
-        if media_id not in self._media_ids:
+        if media_id not in (*self._media_ids, self._failure_media_id):
             raise ApplicationError(ErrorCategory.NOT_FOUND, "The requested item was not found.")
         return MediaItem(
             id=media_id,
             title={
                 "sample-media": "Sample media",
                 "sample-media-two": "Second sample",
+                self._failure_media_id: "Failure retry sample",
             }[media_id],
             creator=Creator(id="poc-creator", username="poc"),
             duration=12.5,
@@ -58,7 +60,7 @@ class _PocProvider(FakeMediaProvider):
     async def resolve_source(
         self, media_id: str, quality: str
     ) -> InternalSourceTarget:
-        if media_id not in self._media_ids:
+        if media_id not in (*self._media_ids, self._failure_media_id):
             raise ApplicationError(ErrorCategory.NOT_FOUND, "The requested media was not found.")
         return InternalSourceTarget(
             url=f"{self._cdn_base_url}/media/{media_id}-{quality}.avi",

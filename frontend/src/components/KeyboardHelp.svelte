@@ -5,8 +5,12 @@
 
   const dispatch = createEventDispatcher<{ close: void }>();
   let dialog: HTMLDialogElement;
+  let closeButton: HTMLButtonElement;
 
-  $: if (dialog && open && !dialog.open) dialog.showModal();
+  $: if (dialog && open && !dialog.open) {
+    dialog.showModal();
+    closeButton.focus();
+  }
   $: if (dialog && !open && dialog.open) dialog.close();
 
   function close(): void {
@@ -17,7 +21,6 @@
 <dialog
   bind:this={dialog}
   data-testid="keyboard-help-dialog"
-  role="dialog"
   aria-modal="true"
   aria-labelledby="keyboard-help-title"
   aria-describedby="keyboard-help-description"
@@ -47,7 +50,7 @@
     <button
       type="button"
       data-testid="close-keyboard-help"
-      autofocus
+      bind:this={closeButton}
       on:click={close}
     >
       Close
