@@ -13,7 +13,11 @@ from .api.tags import router as tags_router
 from .dependencies import get_settings
 from .domain.errors import register_exception_handlers
 from .domain.models import canonical_model_schemas
-from .observability.logging import configure_logging, install_request_context
+from .observability.logging import (
+    configure_logging,
+    install_request_context,
+    log_event,
+)
 from .observability.metrics import metrics
 from .security.headers import install_security_headers
 
@@ -26,8 +30,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         transport = getattr(app.state, "stream_transport", None)
-        if transport is not None:
-            await transport.aclose()
+        try:
+            if transport is not None:
+                await transport.aclose()
+        finally:
+            log_event(
+                "metrics_snapshot",
+                metrics=getattr(app.state, "metrics", metrics).snapshot(),
+            )
 
 
 configure_logging()

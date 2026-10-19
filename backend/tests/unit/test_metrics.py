@@ -34,6 +34,28 @@ class MetricsRegistryTests(unittest.TestCase):
         self.assertEqual(snapshot["stream_first_byte_ms"]["count"], 2)
         self.assertEqual(snapshot["stream_first_byte_ms"]["maximum"], 20)
 
+    def test_reports_direct_share_of_source_resolutions(self) -> None:
+        self.assertEqual(
+            self.metrics.snapshot()["direct_vs_relay_ratio"]["value"], 0
+        )
+        self.metrics.record_source_resolution("direct")
+        self.assertEqual(
+            self.metrics.snapshot()["direct_vs_relay_ratio"]["value"], 1
+        )
+        self.metrics.record_source_resolution("relay")
+        self.metrics.record_source_resolution("relay")
+
+        snapshot = self.metrics.snapshot()
+        self.assertEqual(snapshot["direct_vs_relay_ratio"]["value"], 1 / 3)
+        self.assertEqual(set(snapshot), set(self.metrics.names))
+        self.assertTrue(
+            all("labels" not in value for value in snapshot.values())
+        )
+
+    def test_rejects_unrecognized_source_resolution_kind(self) -> None:
+        with self.assertRaisesRegex(ValueError, "direct or relay"):
+            self.metrics.record_source_resolution("unknown")
+
     def test_rejects_unregistered_metrics_and_wrong_operations(self) -> None:
         with self.assertRaisesRegex(KeyError, "not registered"):
             self.metrics.increment("unknown_metric")

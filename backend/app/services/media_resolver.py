@@ -7,14 +7,21 @@ from urllib.parse import quote, urlencode
 from backend.app.domain.enums import ErrorCategory
 from backend.app.domain.errors import ApplicationError
 from backend.app.domain.models import InternalSourceTarget, MediaSource, SourceResolution
+from backend.app.observability.metrics import MetricsRegistry, metrics
 from backend.app.upstream.provider import UpstreamMediaProvider
 
 from .source_cache import SourceCache
 
 
 class MediaResolver:
-    def __init__(self, provider: UpstreamMediaProvider, ttl_seconds: float = 300.0) -> None:
+    def __init__(
+        self,
+        provider: UpstreamMediaProvider,
+        ttl_seconds: float = 300.0,
+        metrics_registry: MetricsRegistry | None = None,
+    ) -> None:
         self.provider = provider
+        self._metrics = metrics_registry if metrics_registry is not None else metrics
         self.cache = SourceCache[MediaSource](ttl_seconds=ttl_seconds)
         self._resolution_cache = SourceCache[SourceResolution](
             ttl_seconds=ttl_seconds
@@ -49,6 +56,7 @@ class MediaResolver:
         await self.provider.get_media(media_id)
         target = await self.provider.resolve_source(media_id, quality)
         kind, requires_relay = self._classify(target)
+        self._metrics.record_source_resolution(kind)
         relay_path = f"/api/stream/{quote(media_id, safe='')}?{urlencode({'quality': quality})}"
         descriptor = MediaSource(
             playbackUrl=relay_path if requires_relay else target.url,

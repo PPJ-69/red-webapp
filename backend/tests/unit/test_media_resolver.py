@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from backend.app.domain.models import InternalSourceTarget, MediaItem, MediaSource
+from backend.app.observability.metrics import MetricsRegistry
 from backend.app.services.media_resolver import MediaResolver
 from backend.tests.fakes.fake_provider import FakeMediaProvider
 
@@ -94,6 +95,27 @@ class MediaResolverTests(unittest.IsolatedAsyncioTestCase):
             source.playback_url, "/api/stream/sample-media?quality=auto"
         )
         self.assertTrue(source.requires_relay)
+        self.assertTrue(source.requires_relay)
+    async def test_records_direct_and_relay_resolution_share(self) -> None:
+        class HeaderlessProvider(FakeMediaProvider):
+            async def resolve_source(
+                self, media_id: str, quality: str
+            ) -> InternalSourceTarget:
+                target = await super().resolve_source(media_id, quality)
+                return InternalSourceTarget(url=target.url)
+
+        metrics = MetricsRegistry()
+        with patch.dict("os.environ", {"ENABLE_DIRECT_MEDIA": "true"}):
+            await MediaResolver(
+                HeaderlessProvider(), metrics_registry=metrics
+            ).resolve("sample-media")
+            await MediaResolver(
+                FakeMediaProvider(), metrics_registry=metrics
+            ).resolve("sample-media")
+
+        self.assertEqual(
+            metrics.snapshot()["direct_vs_relay_ratio"]["value"], 0.5
+        )
 
 
 if __name__ == "__main__":

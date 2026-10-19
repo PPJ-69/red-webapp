@@ -40,6 +40,8 @@ class MetricsRegistry:
         if len(self._definitions) != len(definitions):
             raise ValueError("Metric names must be unique.")
         self._values = {name: _MetricValue() for name in self._definitions}
+        self._direct_resolutions = 0
+        self._relay_resolutions = 0
         self._lock = Lock()
 
     @property
@@ -67,6 +69,18 @@ class MetricsRegistry:
             metric.value += value
             metric.observations += 1
             metric.maximum = value if metric.maximum is None else max(metric.maximum, value)
+
+    def record_source_resolution(self, kind: str) -> None:
+        if kind not in {"direct", "relay"}:
+            raise ValueError("Source resolution kind must be direct or relay.")
+        definition = self._definition("direct_vs_relay_ratio", MetricType.GAUGE)
+        with self._lock:
+            if kind == "direct":
+                self._direct_resolutions += 1
+            else:
+                self._relay_resolutions += 1
+            total = self._direct_resolutions + self._relay_resolutions
+            self._values[definition.name].value = self._direct_resolutions / total
 
     def snapshot(self) -> dict[str, dict[str, float | int | None | str]]:
         with self._lock:

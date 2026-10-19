@@ -108,3 +108,9 @@
 - **C01-D1 — Browser response policy:** Apply CSP, Referrer-Policy, `X-Content-Type-Options`, frame denial, and a restrictive Permissions-Policy to backend responses and frontend-served documents. CSP permits same-origin scripts and API connections, HTTPS metadata images/direct media, and only inline styles required by the UI; it denies objects and framing. Development-only Vite CSP permits eval for browser automation; backend and preview policies do not.
 - **C01-D2 — CORS defaults:** `CORS_ALLOWED_ORIGINS` is an optional comma-separated list of exact HTTP(S) origins. Empty means same-origin only. Wildcards, credentials, and unconfigured origins are not allowed. Preflight permits only the currently supported API methods and headers.
 - **C01-D3 — Session response cache policy:** Responses under `/api/session` carry `Cache-Control: no-store` if that optional surface is enabled later.
+
+# M6-C02 Observability Contracts
+
+- **C02-D1 — Metrics exposure:** Keep metrics process-local and expose snapshots as structured JSON log events to stdout at graceful application shutdown. Do not add a metrics HTTP endpoint or persistent sink under the O13 stdout-only default.
+- **C02-D2 — Direct/relay ratio:** `direct_vs_relay_ratio` is the fraction of successful source classifications that are direct (`direct / (direct + relay)`), updated only on uncached source resolution. It is 0 before the first resolution. The registry remains unlabeled.
+- **C02-D3 — Browser player errors:** Do not add `browser_player_errors` without a defined reporting endpoint or telemetry path; it remains excluded under G4.

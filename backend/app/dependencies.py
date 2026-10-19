@@ -22,7 +22,10 @@ def get_upstream_provider(request: Request) -> UpstreamMediaProvider:
 def get_media_resolver(request: Request) -> MediaResolver:
     resolver = getattr(request.app.state, "media_resolver", None)
     if resolver is None:
-        resolver = MediaResolver(get_upstream_provider(request))
+        resolver = MediaResolver(
+            get_upstream_provider(request),
+            metrics_registry=getattr(request.app.state, "metrics", metrics),
+        )
         request.app.state.media_resolver = resolver
     return resolver
 
