@@ -29,6 +29,92 @@ Do not use live provider credentials or deploy to the public internet until the
 release gates in [the upstream checklist](docs/upstream-compliance-checklist.md)
 and [the runbook](docs/runbook.md) are cleared.
 
+## Run the app locally
+
+The fastest way to run the app from a fresh checkout is to use the built-in local POC backend and fake CDN. This avoids the live upstream provider entirely and keeps the app runnable without provider credentials or public deployment approval.
+
+### 1) Prerequisites
+
+Install:
+
+- Python 3.12+
+- Node.js 22.12+
+- npm
+- Git
+
+On Windows, use PowerShell for the commands below.
+
+### 2) Get the repository
+
+```powershell
+git clone https://github.com/PPJ-69/red-webapp.git
+cd red-webapp
+```
+
+### 3) Install dependencies
+
+Backend dependencies:
+
+```powershell
+python -m pip install -r backend/requirements.lock
+```
+
+Frontend dependencies:
+
+```powershell
+npm.cmd --prefix frontend ci
+```
+
+### 4) Start the local API with the fake provider
+
+Open a terminal in the repository root and run:
+
+```powershell
+python -m backend.tests.run_poc
+```
+
+This starts a FastAPI app on `http://127.0.0.1:8001` with a fake upstream provider and a fake CDN. Use it for local browsing and browser testing without touching live provider configuration.
+
+Confirm the API is responding:
+
+```powershell
+curl.exe http://127.0.0.1:8001/health/ready
+```
+
+### 5) Start the frontend
+
+Open a second terminal in the repository root and run:
+
+```powershell
+npm.cmd --prefix frontend run dev -- --host 127.0.0.1 --port 5173
+```
+
+The Vite dev server proxies `/api` and `/__poc` to the POC backend by default, so the browser can reach the app without extra environment variables.
+
+### 6) Open the app
+
+Browse to:
+
+```text
+http://127.0.0.1:5173
+```
+
+You should see the Svelte app served by the local frontend and backed by the fake provider backend.
+
+### 7) Stop the app
+
+Stop both commands with `Ctrl+C` in their respective terminals.
+
+### 8) Production/private deployment
+
+This repository also includes a private Compose deployment for a trusted network, but it is not approved for public or live-provider deployment. See:
+
+- [deploy/README.md](deploy/README.md)
+- [docs/runbook.md](docs/runbook.md)
+- [docs/upstream-compliance-checklist.md](docs/upstream-compliance-checklist.md)
+
+Do not enable live provider use until O6/O7/O8 are cleared.
+
 ## Repository map
 
 - `frontend/`: Svelte application, browser tests, and generated frontend types.

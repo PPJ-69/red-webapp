@@ -142,6 +142,10 @@ Also open, defaults in ARCHITECTURE: O2 (multi-worker sessions), O9 (deep-linkab
 ## Last Handoff
 - **Date:** 2026-10-19
 - **Done:** Completed the requirements/drift audit follow-up: opt-in VOD HLS now rejects unsupported playlists, uses the supported MP4 fallback when available, and reports `unsupported_media` otherwise. Regenerated OpenAPI; backend suite passes (190 tests), frontend unit suite passes (165 tests), Svelte check and production build pass, and documentation tests pass (4 tests).
-- **Next:** M6 v1 chunks are complete. Resolve O6 and verify the opt-in provider wiring with an approved live integration before live use; resolve O7/O8 before hosted/public release.
+- **Next:** M6 v1 chunks are complete. Complete the release gates before any live or hosted use:
+  1. Resolve O6 with explicit upstream terms, rate-limit, and permitted-use approval, then run the approved live RedGIFs integration smoke against the opt-in provider wiring and record the signed-URL lifetime and any rate-limit behavior.
+  2. Resolve O7/O8 for hosted/public access controls and audience restrictions, then update the deployment runbook and release checklist to match the approved environment.
+  3. Keep `UPSTREAM_PROVIDER=disabled` by default, preserve RAM-only browser state, and do not claim stronger privacy or deployment guarantees than the qualified privacy statement until these gates are cleared.
+  4. Re-run the no-download compliance/security scenario after any live-provider approval before promoting the stack beyond private trusted-network use.
 - **Watch:** Real Docker/Nginx/TLS deployment smoke is pending. Live-provider operation remains unverified; preserve RAM-only browser state and avoid asserting stronger privacy guarantees than the qualified privacy statement.
 - **On each chunk completion:** move it to *Completed Chunks* with test status, advance *Current Chunk*, and log any decision changes.
