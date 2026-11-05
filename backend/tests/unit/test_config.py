@@ -37,6 +37,12 @@ class SettingsTests(unittest.TestCase):
             )
 
     def test_provider_configuration_is_opt_in_and_requires_secret_file(self) -> None:
+        local_settings = Settings.from_environment(
+            {"APP_ENV": "development", "UPSTREAM_PROVIDER": "redgifs"}
+        )
+        self.assertEqual(local_settings.upstream_provider, UpstreamProviderMode.REDGIFS)
+        self.assertIsNone(local_settings.redgifs_token_file)
+
         settings = Settings.from_environment(
             {
                 "APP_ENV": "production",

@@ -31,9 +31,12 @@ function browserSecurityHeaders(
 }
 
 export default defineConfig(({ mode }) => {
-  const environment = loadEnv(mode, ".", "POC_");
+  const environment = loadEnv(mode, ".", ["API_", "POC_"]);
   const corsEnvironment = loadEnv(mode, ".", "CORS_");
-  const apiOrigin = environment.POC_API_ORIGIN ?? "http://127.0.0.1:8001";
+  const apiOrigin =
+    environment.API_ORIGIN ??
+    environment.POC_API_ORIGIN ??
+    "http://127.0.0.1:8000";
   const allowedOrigins = (corsEnvironment.CORS_ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())

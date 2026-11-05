@@ -49,6 +49,41 @@ class MapperTests(unittest.TestCase):
         self.assertEqual(len(result.items), 1)
         self.assertEqual(result.items[0].id, "sample-media")
 
+    def test_normalizes_live_redgifs_gif_shape_and_page_count(self) -> None:
+        payload = {
+            "gifs": [
+                {
+                    "id": "redgifs-id",
+                    "userName": "redgifs-user",
+                    "tags": ["one"],
+                    "duration": 4.5,
+                    "urls": {
+                        "hd": "https://cdn.example.invalid/clip-hd.mp4",
+                        "thumbnail": "https://cdn.example.invalid/clip.jpg",
+                    },
+                }
+            ],
+            "page": 2,
+            "pages": 4,
+        }
+
+        result = normalize_search_result(
+            payload, query=SearchQuery(page=2, limit=20)
+        )
+
+        self.assertEqual(len(result.items), 1)
+        self.assertEqual(result.items[0].title, "redgifs-id")
+        self.assertEqual(result.items[0].creator.username, "redgifs-user")
+        self.assertEqual(
+            result.items[0].sources[0].playback_url,
+            "https://cdn.example.invalid/clip-hd.mp4",
+        )
+        self.assertEqual(
+            result.items[0].thumbnail_url,
+            "https://cdn.example.invalid/clip.jpg",
+        )
+        self.assertTrue(result.has_more)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,14 +41,12 @@ async def create_upstream_provider(
         return None
     if settings.upstream_provider is not UpstreamProviderMode.REDGIFS:
         raise ConfigurationError("The selected upstream provider is unsupported.")
-    if settings.redgifs_token_file is None:
-        raise ConfigurationError(
-            "REDGIFS_TOKEN_FILE must be configured for the RedGIFs provider."
-        )
-
-    provider = RedgifsClient(
-        auth_manager=AuthManager(_token_reader(settings.redgifs_token_file))
+    auth_manager = (
+        AuthManager(_token_reader(settings.redgifs_token_file))
+        if settings.redgifs_token_file is not None
+        else None
     )
+    provider = RedgifsClient(auth_manager=auth_manager)
     try:
         await provider.authenticate()
     except Exception:

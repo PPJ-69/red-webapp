@@ -31,7 +31,9 @@ and [the runbook](docs/runbook.md) are cleared.
 
 ## Run the app locally
 
-The fastest way to run the app from a fresh checkout is to use the built-in local POC backend and fake CDN. This avoids the live upstream provider entirely and keeps the app runnable without provider credentials or public deployment approval.
+Local development can browse live RedGIFs content. The frontend opens on the
+trending feed and proxies API requests to the local backend. The test-only POC
+with a fake provider remains available for offline playback and browser tests.
 
 ### 1) Prerequisites
 
@@ -65,20 +67,26 @@ Frontend dependencies:
 npm.cmd --prefix frontend ci
 ```
 
-### 4) Start the local API with the fake provider
+### 4) Start the local API with RedGIFs
 
 Open a terminal in the repository root and run:
 
 ```powershell
-python -m backend.tests.run_poc
+$env:APP_ENV = "development"
+$env:UPSTREAM_PROVIDER = "redgifs"
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
-This starts a FastAPI app on `http://127.0.0.1:8001` with a fake upstream provider and a fake CDN. Use it for local browsing and browser testing without touching live provider configuration.
+Development mode obtains a short-lived RedGIFs API token from its temporary
+authentication endpoint; no provider token needs to be stored locally. Starting
+the app and browsing sends requests to RedGIFs. Follow the provider's terms and
+rate limits; this local setup does not approve public deployment or bypass the
+release gates listed below.
 
 Confirm the API is responding:
 
 ```powershell
-curl.exe http://127.0.0.1:8001/health/ready
+curl.exe http://127.0.0.1:8000/health/ready
 ```
 
 ### 5) Start the frontend
@@ -89,7 +97,8 @@ Open a second terminal in the repository root and run:
 npm.cmd --prefix frontend run dev -- --host 127.0.0.1 --port 5173
 ```
 
-The Vite dev server proxies `/api` and `/__poc` to the POC backend by default, so the browser can reach the app without extra environment variables.
+The Vite dev server proxies `/api` to `http://127.0.0.1:8000` by default, so
+the browser can reach the live backend without extra environment variables.
 
 ### 6) Open the app
 
@@ -99,7 +108,15 @@ Browse to:
 http://127.0.0.1:5173
 ```
 
-You should see the Svelte app served by the local frontend and backed by the fake provider backend.
+The trending grid should load on open. Search text, `#tags`, and `@creators`
+use the live provider.
+
+### Offline POC
+
+To run the isolated fake-provider POC instead, start it with
+`python -m backend.tests.run_poc` on port 8001 and set
+`$env:POC_API_ORIGIN = "http://127.0.0.1:8001"` before starting Vite. This is
+for offline playback and browser testing, not live browsing.
 
 ### 7) Stop the app
 

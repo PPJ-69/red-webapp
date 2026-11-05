@@ -8,7 +8,7 @@ from backend.app.upstream.redgifs_client import RedgifsClient
 def _provider(sources: list[dict[str, str]]) -> RedgifsClient:
     return RedgifsClient(
         fixtures={
-            "get:/media/sample-media": {
+            "get:/gifs/sample-media": {
                 "id": "sample-media",
                 "title": "Sample media",
                 "sources": sources,

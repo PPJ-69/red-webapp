@@ -45,6 +45,21 @@ class SearchBarBrowserTests(PlayerBasicBrowserTests):
                     f"http://127.0.0.1:{self.web_port}/",
                     wait_until="networkidle",
                 )
+                expect(page.get_by_test_id("search-status")).to_have_text(
+                    "0 results loaded."
+                )
+                self.assertEqual(
+                    search_requests,
+                    [
+                        {
+                            "mode": ["search"],
+                            "order": ["trending"],
+                            "page": ["1"],
+                            "limit": ["20"],
+                        }
+                    ],
+                )
+                search_requests.clear()
                 query = page.get_by_test_id("search-query")
                 query.fill("cats #fu")
                 expect(page.get_by_test_id("tag-suggestions")).to_be_visible()

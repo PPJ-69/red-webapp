@@ -229,6 +229,13 @@
       loadingMoreResults = snapshot.loadingMore;
       refreshQueue(displayedResults);
     });
+    const initialSearch = {
+      rawQuery: "",
+      order: "trending" as const,
+      limit: 20,
+    };
+    lastSearch = initialSearch;
+    void performSearch(initialSearch);
     window.addEventListener("keydown", handleWindowKeydown);
     return () => {
       unsubscribeQueue();

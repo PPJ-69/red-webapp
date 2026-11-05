@@ -52,7 +52,9 @@ def normalize_creator(payload: Mapping[str, Any] | None) -> Creator | None:
     if not payload:
         return None
     creator_id = _coerce_str(_first(payload, "id", "userId", "user_id"), "")
-    username = _coerce_str(_first(payload, "username", "name", "user_name"), "")
+    username = _coerce_str(
+        _first(payload, "username", "name", "user_name", "userName"), ""
+    )
     if not creator_id and not username:
         return None
     if not creator_id:
@@ -62,9 +64,17 @@ def normalize_creator(payload: Mapping[str, Any] | None) -> Creator | None:
     return Creator(
         id=creator_id,
         username=username,
-        display_name=_coerce_str(_first(payload, "displayName", "display_name"), "") or None,
+        display_name=_coerce_str(
+            _first(payload, "displayName", "display_name"), ""
+        )
+        or None,
         profile_image_url=_coerce_str(
-            _first(payload, "profileImageUrl", "profile_image_url"),
+            _first(
+                payload,
+                "profileImageUrl",
+                "profile_image_url",
+                "userProfileImageUrl",
+            ),
             "",
         )
         or None,
@@ -74,7 +84,19 @@ def normalize_creator(payload: Mapping[str, Any] | None) -> Creator | None:
 def _source_candidates(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     sources = payload.get("sources")
     if isinstance(sources, Sequence) and not isinstance(sources, (str, bytes)):
-        return [source for source in sources if isinstance(source, Mapping)]
+        candidates = [source for source in sources if isinstance(source, Mapping)]
+    else:
+        candidates = []
+
+    urls = payload.get("urls")
+    if isinstance(urls, Mapping):
+        for quality in ("hd", "sd", "gif"):
+            url = urls.get(quality)
+            if isinstance(url, str) and url:
+                candidates.append({"playbackUrl": url})
+    if candidates:
+        return candidates
+
     raw_url = _coerce_str(_first(payload, "url", "playbackUrl", "playback_url"), "")
     if raw_url:
         return [{"playbackUrl": raw_url}]
@@ -83,12 +105,14 @@ def _source_candidates(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 def normalize_media_item(payload: Mapping[str, Any]) -> MediaItem:
     media_id = _coerce_str(_first(payload, "id", "mediaId", "media_id"), "")
-    title = _coerce_str(_first(payload, "title", "name"), "")
-    if not media_id or not title:
-        raise ValueError("Media payload does not include a usable id/title.")
+    if not media_id:
+        raise ValueError("Media payload does not include a usable id.")
+    title = _coerce_str(_first(payload, "title", "name"), "") or media_id
 
-    creator_payload = payload.get("creator") or payload.get("user") or {}
-    creator = normalize_creator(creator_payload if isinstance(creator_payload, Mapping) else None)
+    creator_payload = payload.get("creator") or payload.get("user") or payload
+    creator = normalize_creator(
+        creator_payload if isinstance(creator_payload, Mapping) else None
+    )
 
     tags: list[str] = []
     raw_tags = payload.get("tags") or []
@@ -106,6 +130,14 @@ def normalize_media_item(payload: Mapping[str, Any]) -> MediaItem:
         "",
     ) or None
     poster_url = _coerce_str(_first(payload, "posterUrl", "poster_url"), "") or None
+    urls = payload.get("urls")
+    if isinstance(urls, Mapping):
+        thumbnail_url = thumbnail_url or _coerce_str(
+            _first(urls, "thumbnail", "vthumbnail", "poster"), ""
+        ) or None
+        poster_url = poster_url or _coerce_str(
+            _first(urls, "poster", "thumbnail"), ""
+        ) or None
 
     sources: list[MediaSource] = []
     for candidate in _source_candidates(payload):
@@ -133,7 +165,9 @@ def normalize_media_item(payload: Mapping[str, Any]) -> MediaItem:
     )
 
 
-def normalize_search_result(payload: Mapping[str, Any], *, query: SearchQuery | None = None) -> SearchResult:
+def normalize_search_result(
+    payload: Mapping[str, Any], *, query: SearchQuery | None = None
+) -> SearchResult:
     items_payload = payload.get("items") or payload.get("gifs") or payload.get("media") or []
     if not isinstance(items_payload, Sequence) or isinstance(items_payload, (str, bytes)):
         items_payload = []
@@ -146,9 +180,19 @@ def normalize_search_result(payload: Mapping[str, Any], *, query: SearchQuery | 
             except ValueError:
                 continue
 
-    page = _coerce_int(_first(payload, "page", "currentPage", "current_page")) or (query.page if query else 1)
-    limit = _coerce_int(_first(payload, "limit", "pageSize", "per_page")) or (query.limit if query else 20)
-    has_more = bool(_first(payload, "hasMore", "has_more"))
+    page = _coerce_int(
+        _first(payload, "page", "currentPage", "current_page")
+    ) or (query.page if query else 1)
+    limit = _coerce_int(
+        _first(payload, "limit", "pageSize", "per_page")
+    ) or (query.limit if query else 20)
+    has_more_value = _first(payload, "hasMore", "has_more")
+    pages = _coerce_int(_first(payload, "pages", "totalPages", "total_pages"))
+    has_more = (
+        bool(has_more_value)
+        if has_more_value is not None
+        else pages is not None and page < pages
+    )
     total = _coerce_int(_first(payload, "total", "count"))
     return SearchResult(
         items=items,
