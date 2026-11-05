@@ -37,10 +37,11 @@ backend session API or browser persistence layer is currently implemented.
 The API routes currently implemented are listed in [the API reference](api.md)
 and machine-readable [OpenAPI document](openapi.json). Provider construction is
 disabled by default. For local development,
-`APP_ENV=development` and `UPSTREAM_PROVIDER=redgifs` use RedGIFs temporary
-authentication without a locally stored token. Other environments require
-`REDGIFS_TOKEN_FILE`; startup reads the token locally and makes no provider
-request. The explicit deployment overlay is
+`UPSTREAM_PROVIDER=redgifs` in any environment uses RedGIFs temporary
+authentication without a locally stored token. An optional
+`REDGIFS_TOKEN_FILE` can supply a manually managed token instead. Startup
+obtains a short-lived token automatically when no file is configured. The
+explicit deployment overlay is
 `deploy/docker-compose.provider.yml`. This wiring has not been validated
 against the live provider and does not resolve O6. Do not mistake a healthy
 process or successful image build for a usable live-provider deployment.

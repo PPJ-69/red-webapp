@@ -5,10 +5,10 @@
 Use the Compose deployment only on a private, trusted network. O6 (provider
 terms/rate limits), O7 (hosted access control), and O8 (audience gating) remain
 release gates. Provider wiring is opt-in and disabled in the base Compose
-stack; the explicit provider overlay reads a mounted token file and constructs
-the existing adapter, but has not been validated against the live provider. A
-healthy container only proves process health, not provider readiness. Do not
-deploy publicly or enable live credentials until the
+stack; the explicit provider overlay enables the existing adapter, which
+obtains a short-lived token automatically. This has not been validated against
+the live provider. A healthy container only proves process health, not
+provider readiness. Do not deploy publicly or enable live-provider access until the
 [upstream checklist](upstream-compliance-checklist.md) is approved and the
 live integration is verified.
 
@@ -73,12 +73,12 @@ the application.
 
 An `upstream_authentication_failed` or repeated provider error means the
 provider request path is failing; it is not fixed by retrying indefinitely.
-Check only the deployment's approved secret/configuration mechanism and
-sanitized error category. The provider overlay reads a raw bearer token from a
-mounted secret file; do not put token contents in `.env`. A `401` refresh
-rereads that file once. Replace the mounted secret and restart the service if
-the provider rejects the credential; disable live use and escalate if failures
-continue.
+Check the sanitized error category and whether RedGIFs' temporary
+authentication endpoint is available. If `REDGIFS_TOKEN_FILE` is explicitly
+configured, verify that file through the deployment's approved secret
+mechanism without exposing its contents. A `401` refresh reacquires the
+temporary token or rereads the configured file once. Disable live use and
+escalate if failures continue.
 
 ### Rate limiting
 

@@ -36,12 +36,20 @@ class SettingsTests(unittest.TestCase):
                 {"APP_ENV": "test", "ENABLE_HLS": "sometimes"}
             )
 
-    def test_provider_configuration_is_opt_in_and_requires_secret_file(self) -> None:
+    def test_provider_configuration_is_opt_in_and_token_file_is_optional(self) -> None:
         local_settings = Settings.from_environment(
             {"APP_ENV": "development", "UPSTREAM_PROVIDER": "redgifs"}
         )
         self.assertEqual(local_settings.upstream_provider, UpstreamProviderMode.REDGIFS)
         self.assertIsNone(local_settings.redgifs_token_file)
+
+        production_settings = Settings.from_environment(
+            {"APP_ENV": "production", "UPSTREAM_PROVIDER": "redgifs"}
+        )
+        self.assertEqual(
+            production_settings.upstream_provider, UpstreamProviderMode.REDGIFS
+        )
+        self.assertIsNone(production_settings.redgifs_token_file)
 
         settings = Settings.from_environment(
             {
@@ -58,7 +66,6 @@ class SettingsTests(unittest.TestCase):
 
         for environ in (
             {"APP_ENV": "production", "UPSTREAM_PROVIDER": "unknown"},
-            {"APP_ENV": "production", "UPSTREAM_PROVIDER": "redgifs"},
             {
                 "APP_ENV": "production",
                 "REDGIFS_TOKEN_FILE": "/run/secrets/redgifs_token",

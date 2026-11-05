@@ -129,8 +129,8 @@
 # Provider Deployment Wiring
 
 - **PDW-1 — Explicit opt-in:** `UPSTREAM_PROVIDER` defaults to `disabled`. The base Compose stack keeps it disabled; only the separate provider overlay selects `redgifs`.
-- **PDW-2 — Secret-file boundary:** The provider accepts a raw bearer token from a mounted read-only file (`REDGIFS_TOKEN_FILE`), not a token value in environment configuration. Startup reads and validates the file locally and makes no provider request. On authentication retry, the token factory rereads the file; the operator is responsible for supplying/rotating a provider-issued token.
-- **PDW-3 — Live gate remains external:** Provider construction and local startup are testable without network access, but they do not establish provider terms, token-acquisition semantics, or live API compatibility. O6 must be approved and a separate live integration smoke explicitly authorized before enabling the overlay.
+- **PDW-2 — Provider token handling:** The provider obtains a short-lived bearer token from RedGIFs temporary authentication by default and holds it in memory only. `REDGIFS_TOKEN_FILE` is an optional operator-managed override; when used, the file is reread on authentication retry and must not be exposed in environment values or logs.
+- **PDW-3 — Live gate remains external:** Automated tests mock provider authentication and API requests; they do not establish provider terms, token-acquisition semantics, or live API compatibility. O6 must be approved and a separate live integration smoke explicitly authorized before enabling the overlay.
 
 # Session Scope Resolution
 

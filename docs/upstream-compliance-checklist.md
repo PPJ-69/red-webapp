@@ -31,10 +31,10 @@ credentials or signed media URLs in this document.
   implement any required gating before hosted use.
 - **O1/O10 — Session scope (resolved):** V1 state is frontend RAM-only and
   backend session routes are optional future functionality (D16).
-- **Provider wiring:** The opt-in RedGIFs provider construction and mounted
-  token-file path are implemented. Validate them with an approved live
-  integration after O6 clearance; the default Compose stack keeps the
-  provider disabled.
+- **Provider wiring:** The opt-in RedGIFs provider construction and automatic
+  short-lived token acquisition are implemented; an operator-managed token
+  file remains optional. Validate them with an approved live integration
+  after O6 clearance; the default Compose stack keeps the provider disabled.
 - **Deployment smoke:** Run the actual Docker/Nginx/TLS stack and verify
   repeated Range/seek, stream closure on shutdown, and no application-created
   media or state artifacts. Local Docker/Nginx/TLS execution is still

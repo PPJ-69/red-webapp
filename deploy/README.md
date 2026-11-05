@@ -1,11 +1,11 @@
 # Private deployment
 
 > **Not approved for live use:** The base Compose stack keeps the provider
-> disabled. An explicit overlay can wire the existing adapter to a mounted
-> token file, but this has not been live-verified. O6 (provider terms/rate
-> limits), O7 (hosted access control), and O8 (audience gating) remain release
-> gates. This is private-network packaging, not approval for public or
-> live-provider deployment.
+> disabled. An explicit overlay enables the existing adapter, which obtains a
+> short-lived token automatically, but this has not been live-verified. O6
+> (provider terms/rate limits), O7 (hosted access control), and O8 (audience
+> gating) remain release gates. This is private-network packaging, not
+> approval for public or live-provider deployment.
 
 The Compose stack builds the production frontend into an unprivileged Nginx
 image and runs the API in a separate, non-root Python image. The API port is
@@ -48,11 +48,11 @@ The default stack explicitly sets `UPSTREAM_PROVIDER=disabled`. Only after O6
 approval and the required live smoke, the opt-in overlay can be combined with
 the base file using
 `docker compose --env-file .env -f docker-compose.yml -f docker-compose.provider.yml up --build -d`.
-Set `REDGIFS_TOKEN_HOST_PATH` to a host path containing only the raw provider
-token. Compose mounts it as a read-only secret; do not put the token content
-in `.env`, environment variables, or the repository. The overlay does not
-implement credential acquisition or refresh; on a rejected token, replace the
-secret file and restart the service.
+The adapter obtains a short-lived RedGIFs API token automatically; no token
+file or `REDGIFS_TOKEN_HOST_PATH` is needed. If an operator chooses to set
+`REDGIFS_TOKEN_FILE` explicitly, it should point to a locally managed raw
+token file and must not expose the token through `.env`, logs, or the
+repository.
 
 The container build installs only the pinned backend runtime dependency set;
 test, browser-automation, and development packages are excluded.

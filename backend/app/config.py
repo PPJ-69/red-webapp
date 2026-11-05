@@ -68,15 +68,6 @@ class Settings:
             ) from exc
 
         raw_token_file = environ.get("REDGIFS_TOKEN_FILE", "").strip()
-        if (
-            upstream_provider is UpstreamProviderMode.REDGIFS
-            and not raw_token_file
-            and app_env is not AppEnvironment.DEVELOPMENT
-        ):
-            raise ConfigurationError(
-                "REDGIFS_TOKEN_FILE must point to a mounted provider token file "
-                "when UPSTREAM_PROVIDER=redgifs outside development."
-            )
         if upstream_provider is UpstreamProviderMode.DISABLED and raw_token_file:
             raise ConfigurationError(
                 "REDGIFS_TOKEN_FILE requires UPSTREAM_PROVIDER=redgifs."

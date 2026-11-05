@@ -16,7 +16,7 @@ penetration test.
 | CORS and browser policy | PASS | `backend/tests/integration/test_security_headers.py` verifies exact-origin allow/deny, method/header preflight restrictions, and CSP/security headers on API and stream responses. Empty CORS configuration remains same-origin-only. |
 | Metadata XSS | PASS, scoped | `frontend/tests/e2e/xss_metadata_spec.py` renders hostile title, description, tag, and creator metadata as inert text under CSP and verifies no injected handler executes. |
 | No-download and browser persistence | PASS, automated gate | `tests/compliance/test_full_scenario.py` runs 10 unique searches, plays and seeks 100 distinct in-memory WebM items, scrolls 320 thumbnails, toggles a favorite, saves a search, checks browser storage/cookies, restarts the browser, and compares recursive media/database/settings scans while monitoring filesystem writes. The fixture remains in browser memory and API responses are intercepted locally. CI runs this test as a release-blocking stage. |
-| Production provider wiring | IMPLEMENTED, NOT LIVE-VERIFIED | `UPSTREAM_PROVIDER=redgifs` constructs the existing adapter from a mounted token file at startup. The base Compose stack remains disabled, and startup makes no provider call. Live terms, credentials, and API behavior remain unverified under O6. |
+| Production provider wiring | IMPLEMENTED, NOT LIVE-VERIFIED | `UPSTREAM_PROVIDER=redgifs` constructs the existing adapter, which obtains a short-lived token automatically unless an optional token file is configured. The base Compose stack remains disabled. Live terms and API behavior remain unverified under O6. |
 
 ## Release limitations
 

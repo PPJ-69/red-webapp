@@ -12,9 +12,9 @@ browser no-download gate passes locally and runs as a release-blocking CI
 check. This does not make the current production package ready for live use:
 
 - Provider construction is opt-in and disabled in the default Compose stack.
-  The explicit provider Compose overlay reads a mounted token file and wires
-  the existing adapter, but no live provider request or deployment smoke has
-  been verified.
+  The explicit provider Compose overlay enables the existing adapter, which
+  obtains a short-lived API token from RedGIFs automatically. No live provider
+  request or deployment smoke has been verified.
 - Upstream terms, rate limits, and permitted use (O6) have not been cleared.
 - Hosted access control and audience gating (O7/O8) are not implemented.
 - V1 session state is held in frontend RAM and lost on reload. Backend
@@ -77,11 +77,11 @@ $env:UPSTREAM_PROVIDER = "redgifs"
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Development mode obtains a short-lived RedGIFs API token from its temporary
-authentication endpoint; no provider token needs to be stored locally. Starting
-the app and browsing sends requests to RedGIFs. Follow the provider's terms and
-rate limits; this local setup does not approve public deployment or bypass the
-release gates listed below.
+The backend obtains a short-lived RedGIFs API token from its temporary
+authentication endpoint; no provider token needs to be supplied or stored.
+Starting the app and browsing sends requests to RedGIFs. Follow the provider's
+terms and rate limits; this local setup does not approve public deployment or
+bypass the release gates listed below.
 
 Confirm the API is responding:
 

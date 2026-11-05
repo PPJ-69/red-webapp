@@ -79,7 +79,7 @@ class RedgifsMediaContractTests(ProviderContract, unittest.IsolatedAsyncioTestCa
         self.assertEqual(result.page, 1)
         self.assertFalse(result.has_more)
 
-    async def test_client_fetches_temporary_token_when_no_file_token_is_configured(
+    async def test_client_fetches_temporary_token_without_a_configured_token(
         self,
     ) -> None:
         auth_http = AsyncMock()
